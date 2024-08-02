@@ -72,11 +72,88 @@ using namespace std;
 
 ///
 //////
-/////////// declaration
+/////////// enum + declaration
 //////
 ///
 
-class Piece;
+enum piece_type{
+    PT_PAWN,
+    PT_KNIGHT,
+    PT_BISHOP,
+    PT_ROOK,
+    PT_QUEEN,
+    PT_KING,
+};
+
+enum winner{
+    WINNER_NO_WINNER_YET,
+    WINNER_PLAYER_0,
+    WINNER_PLAYER_1,
+    WINNER_STALEMATE,
+};
+
+class Tile;
+
+class Piece{
+
+    public:
+
+        string icon;
+
+        int forward_y;
+        // int forward_x = 0; // this only makes sense in 4way chess
+
+        int owner; // which player owns the piece
+
+        enum piece_type type;
+
+        Tile * location;
+
+        bool has_not_moved = true;
+
+        Piece * duplicate(Tile * arg_location);
+
+        vector<Tile *> get_valid_moves();
+
+        enum winner move_to(Tile * tile);
+
+    private:
+
+        vector<Tile *> gen_valid_moves_pawn();
+
+        vector<Tile *> gen_valid_moves_knight();
+
+        vector<Tile *> gen_valid_moves_bishop();
+
+        vector<Tile *> gen_valid_moves_rook();
+
+        vector<Tile *> gen_valid_moves_king();
+
+};
+
+class Tile{
+
+    public:
+
+        int y;
+        int x;
+
+        // horizontal/vertical
+        Tile * neighbour_up = nullptr;
+        Tile * neighbour_down = nullptr;
+        Tile * neighbour_left = nullptr;
+        Tile * neighbour_right = nullptr;
+        // diagonal
+        Tile * neighbour_upleft = nullptr;
+        Tile * neighbour_upright = nullptr;
+        Tile * neighbour_downleft = nullptr;
+        Tile * neighbour_downright = nullptr;
+
+        Piece * piece = nullptr;
+
+        Tile * duplicate();
+
+};
 
 ///
 //////
@@ -133,19 +210,447 @@ void disp_cur_set(int y, int x){
     cout << "H";
 }
 
-
 ///
 //////
-/////////// enum: winner
+/////////// module: piece
 //////
 ///
 
-enum winner{
-    WINNER_NO_WINNER_YET,
-    WINNER_PLAYER_0,
-    WINNER_PLAYER_1,
-    WINNER_STALEMATE,
-};
+Piece * Piece::duplicate(Tile * arg_location){
+
+    Piece * copy = new Piece;
+
+    copy->icon = icon;
+
+    copy->forward_y = forward_y;
+
+    copy->owner = owner;
+
+    copy->type = type;
+
+    copy->location = arg_location;
+
+    copy->has_not_moved = has_not_moved;
+
+    return copy;
+
+}
+
+vector<Tile *> Piece::get_valid_moves(){
+
+    vector<Tile *> moves = {};
+
+    switch(type){
+
+        case PT_PAWN:{
+            moves = gen_valid_moves_pawn();
+        }break;
+
+        case PT_KNIGHT:{
+            moves = gen_valid_moves_knight();
+        }break;
+
+        case PT_BISHOP:{
+            moves = gen_valid_moves_bishop();
+        }break;
+
+        case PT_ROOK:{
+            moves = gen_valid_moves_rook();
+        }break;
+
+        case PT_QUEEN:{
+            moves = gen_valid_moves_bishop();
+            for(Tile * rook_move : gen_valid_moves_rook()){
+                moves.push_back(rook_move);
+            }
+        }break;
+
+        case PT_KING:{
+            moves = gen_valid_moves_king();
+        }break;
+
+    }
+
+    return moves;
+
+}
+
+enum winner Piece::move_to(Tile * tile){
+
+    has_not_moved = false;
+
+    location->piece = nullptr;
+    location = tile;
+
+    if(tile->piece){
+
+        if(tile->piece->type == PT_KING){
+            if(tile->piece->owner == 0){
+                return WINNER_PLAYER_1;
+            }else if(tile->piece->owner == 1){
+                return WINNER_PLAYER_0;
+            }else{
+                UNREACHABLE();
+            }
+        }
+
+        tile->piece->location = nullptr;
+        delete tile->piece;
+    }
+
+    tile->piece = this;
+
+    // TODO what if this is a pawn and it reached the last tile
+
+    return WINNER_NO_WINNER_YET;
+
+}
+
+// private
+
+vector<Tile *> Piece::gen_valid_moves_pawn(){
+
+    vector<Tile *> moves = {};
+
+    if(forward_y == -1){
+
+        if(location->neighbour_up && !location->neighbour_up->piece){
+
+            moves.push_back(location->neighbour_up);
+
+            if(has_not_moved && location->neighbour_up->neighbour_up && !location->neighbour_up->neighbour_up->piece){
+
+                moves.push_back(location->neighbour_up->neighbour_up);
+
+            }
+
+        }
+
+        if(location->neighbour_upleft && (location->neighbour_upleft->piece && location->neighbour_upleft->piece->owner != owner)){
+            moves.push_back(location->neighbour_upleft);
+        }
+
+        if(location->neighbour_upright && (location->neighbour_upright->piece && location->neighbour_upright->piece->owner != owner)){
+            moves.push_back(location->neighbour_upright);
+        }
+
+        // TODO en passant
+
+    }else if(forward_y == 1){
+
+        if(location->neighbour_down && !location->neighbour_down->piece){
+
+            moves.push_back(location->neighbour_down);
+
+            if(has_not_moved && location->neighbour_down->neighbour_down && !location->neighbour_down->neighbour_down->piece){
+
+                moves.push_back(location->neighbour_down->neighbour_down);
+
+            }
+
+        }
+
+        if(location->neighbour_downleft && (location->neighbour_downleft->piece && location->neighbour_downleft->piece->owner != owner)){
+            moves.push_back(location->neighbour_downleft);
+        }
+
+        if(location->neighbour_downright && (location->neighbour_downright->piece && location->neighbour_downright->piece->owner != owner)){
+            moves.push_back(location->neighbour_downright);
+        }
+
+        // TODO en passant
+
+    }else{
+
+        UNREACHABLE();
+
+    }
+
+    return moves;
+
+}
+
+vector<Tile *> Piece::gen_valid_moves_knight(){
+
+    vector<Tile *> moves = {};
+
+    // TODO in the 4way chess map this won't be sufficient
+
+    if(location->neighbour_up){
+
+        if(location->neighbour_up->neighbour_upleft){
+            if(!location->neighbour_up->neighbour_upleft->piece || (location->neighbour_up->neighbour_upleft->piece->owner != owner)){
+                moves.push_back(location->neighbour_up->neighbour_upleft);
+            }
+        }
+
+        if(location->neighbour_up->neighbour_upright){
+            if(!location->neighbour_up->neighbour_upright->piece || (location->neighbour_up->neighbour_upright->piece->owner != owner)){
+                moves.push_back(location->neighbour_up->neighbour_upright);
+            }
+        }
+
+    }
+
+    if(location->neighbour_down){
+
+        if(location->neighbour_down->neighbour_downleft){
+            if(!location->neighbour_down->neighbour_downleft->piece || (location->neighbour_down->neighbour_downleft->piece->owner != owner)){
+                moves.push_back(location->neighbour_down->neighbour_downleft);
+            }
+        }
+
+        if(location->neighbour_down->neighbour_downright){
+            if(!location->neighbour_down->neighbour_downright->piece || (location->neighbour_down->neighbour_downright->piece->owner != owner)){
+                moves.push_back(location->neighbour_down->neighbour_downright);
+            }
+        }
+
+    }
+
+    if(location->neighbour_left){
+
+        if(location->neighbour_left->neighbour_upleft){
+            if(!location->neighbour_left->neighbour_upleft->piece || (location->neighbour_left->neighbour_upleft->piece->owner != owner)){
+                moves.push_back(location->neighbour_left->neighbour_upleft);
+            }
+        }
+
+        if(location->neighbour_left->neighbour_downright){
+            if(!location->neighbour_left->neighbour_downright->piece || (location->neighbour_left->neighbour_downright->piece->owner != owner)){
+                moves.push_back(location->neighbour_left->neighbour_downright);
+            }
+        }
+
+    }
+
+    if(location->neighbour_right){
+
+        if(location->neighbour_right->neighbour_upright){
+            if(!location->neighbour_right->neighbour_upright->piece || (location->neighbour_right->neighbour_upright->piece->owner != owner)){
+                moves.push_back(location->neighbour_right->neighbour_upright);
+            }
+        }
+
+        if(location->neighbour_right->neighbour_downright){
+            if(!location->neighbour_right->neighbour_downright->piece || (location->neighbour_right->neighbour_downright->piece->owner != owner)){
+                moves.push_back(location->neighbour_right->neighbour_downright);
+            }
+        }
+
+    }
+
+    return moves;
+
+}
+
+vector<Tile *> Piece::gen_valid_moves_bishop(){
+
+    vector<Tile *> moves = {};
+
+    {
+        Tile * pos = location;
+
+        while(true){
+            pos = pos->neighbour_upleft;
+            if(!pos){
+                break;
+            }
+
+            if(pos->piece){
+                if(pos->piece->owner != owner){
+                    moves.push_back(pos);
+                }
+
+                break;
+            }
+        }
+    }
+
+    {
+        Tile * pos = location;
+
+        while(true){
+            pos = pos->neighbour_upright;
+            if(!pos){
+                break;
+            }
+
+            if(pos->piece){
+                if(pos->piece->owner != owner){
+                    moves.push_back(pos);
+                }
+
+                break;
+            }
+        }
+    }
+
+    {
+        Tile * pos = location;
+
+        while(true){
+            pos = pos->neighbour_downleft;
+            if(!pos){
+                break;
+            }
+
+            if(pos->piece){
+                if(pos->piece->owner != owner){
+                    moves.push_back(pos);
+                }
+
+                break;
+            }
+        }
+    }
+
+    {
+        Tile * pos = location;
+
+        while(true){
+            pos = pos->neighbour_downright;
+            if(!pos){
+                break;
+            }
+
+            if(pos->piece){
+                if(pos->piece->owner != owner){
+                    moves.push_back(pos);
+                }
+
+                break;
+            }
+        }
+    }
+
+    return moves;
+
+}
+
+vector<Tile *> Piece::gen_valid_moves_rook(){
+
+    vector<Tile *> moves = {};
+
+    {
+        Tile * pos = location;
+
+        while(true){
+            pos = pos->neighbour_up;
+            if(!pos){
+                break;
+            }
+
+            if(pos->piece){
+                if(pos->piece->owner != owner){
+                    moves.push_back(pos);
+                }
+
+                break;
+            }
+        }
+    }
+
+    {
+        Tile * pos = location;
+
+        while(true){
+            pos = pos->neighbour_down;
+            if(!pos){
+                break;
+            }
+
+            if(pos->piece){
+                if(pos->piece->owner != owner){
+                    moves.push_back(pos);
+                }
+
+                break;
+            }
+        }
+    }
+
+    {
+        Tile * pos = location;
+
+        while(true){
+            pos = pos->neighbour_left;
+            if(!pos){
+                break;
+            }
+
+            if(pos->piece){
+                if(pos->piece->owner != owner){
+                    moves.push_back(pos);
+                }
+
+                break;
+            }
+        }
+    }
+
+    {
+        Tile * pos = location;
+
+        while(true){
+            pos = pos->neighbour_right;
+            if(!pos){
+                break;
+            }
+
+            if(pos->piece){
+                if(pos->piece->owner != owner){
+                    moves.push_back(pos);
+                }
+
+                break;
+            }
+        }
+    }
+
+    return moves;
+
+}
+
+vector<Tile *> Piece::gen_valid_moves_king(){
+
+    vector<Tile *> moves = {};
+
+    if(location->neighbour_up && (!location->neighbour_up->piece || location->neighbour_up->piece->owner != owner)){
+        moves.push_back(location->neighbour_up);
+    }
+
+    if(location->neighbour_upright && (!location->neighbour_upright->piece || location->neighbour_upright->piece->owner != owner)){
+        moves.push_back(location->neighbour_upright);
+    }
+
+    if(location->neighbour_right && (!location->neighbour_right->piece || location->neighbour_right->piece->owner != owner)){
+        moves.push_back(location->neighbour_right);
+    }
+
+    if(location->neighbour_downright && (!location->neighbour_downright->piece || location->neighbour_downright->piece->owner != owner)){
+        moves.push_back(location->neighbour_downright);
+    }
+
+    if(location->neighbour_down && (!location->neighbour_down->piece || location->neighbour_down->piece->owner != owner)){
+        moves.push_back(location->neighbour_down);
+    }
+
+    if(location->neighbour_downleft && (!location->neighbour_downleft->piece || location->neighbour_downleft->piece->owner != owner)){
+        moves.push_back(location->neighbour_downleft);
+    }
+
+    if(location->neighbour_left && (!location->neighbour_left->piece || location->neighbour_left->piece->owner != owner)){
+        moves.push_back(location->neighbour_left);
+    }
+
+    if(location->neighbour_upleft && (!location->neighbour_upleft->piece || location->neighbour_upleft->piece->owner != owner)){
+        moves.push_back(location->neighbour_upleft);
+    }
+
+    return moves;
+
+}
 
 ///
 //////
@@ -153,478 +658,23 @@ enum winner{
 //////
 ///
 
-class Tile{
+Tile * Tile::duplicate(){
 
-    public:
+    Tile * copy = new Tile;
 
-        int y;
-        int x;
+    copy->y = y;
+    copy->x = x;
 
-        // horizontal/vertical
-        Tile * neighbour_up = nullptr;
-        Tile * neighbour_down = nullptr;
-        Tile * neighbour_left = nullptr;
-        Tile * neighbour_right = nullptr;
-        // diagonal
-        Tile * neighbour_upleft = nullptr;
-        Tile * neighbour_upright = nullptr;
-        Tile * neighbour_downleft = nullptr;
-        Tile * neighbour_downright = nullptr;
+    // the neighbours should be initialised by the caller
 
-        Piece * piece = nullptr;
+    if(piece){
+        copy->piece = piece->duplicate(copy);
+        copy->piece->location = copy;
+    }
 
-};
+    return copy;
 
-///
-//////
-/////////// module: piece
-//////
-///
-
-enum piece_type{
-    PT_PAWN,
-    PT_KNIGHT,
-    PT_BISHOP,
-    PT_ROOK,
-    PT_QUEEN,
-    PT_KING,
-};
-
-class Piece{
-
-    public:
-
-        string icon;
-
-        int forward_y;
-        // int forward_x = 0; // this only makes sense in 4way chess
-
-        int owner; // which player owns the piece
-
-        enum piece_type type;
-
-        Tile * location;
-
-        bool has_not_moved = true;
-
-        vector<Tile *> get_valid_moves(){
-
-            vector<Tile *> moves = {};
-
-            switch(type){
-
-                case PT_PAWN:{
-                    moves = gen_valid_moves_pawn();
-                }break;
-
-                case PT_KNIGHT:{
-                    moves = gen_valid_moves_knight();
-                }break;
-
-                case PT_BISHOP:{
-                    moves = gen_valid_moves_bishop();
-                }break;
-
-                case PT_ROOK:{
-                    moves = gen_valid_moves_rook();
-                }break;
-
-                case PT_QUEEN:{
-                    moves = gen_valid_moves_bishop();
-                    for(Tile * rook_move : gen_valid_moves_rook()){
-                        moves.push_back(rook_move);
-                    }
-                }break;
-
-                case PT_KING:{
-                    moves = gen_valid_moves_king();
-                }break;
-
-            }
-
-            return moves;
-
-        }
-
-        enum winner move_to(Tile * tile){
-
-            has_not_moved = false;
-
-            location->piece = nullptr;
-            location = tile;
-
-            if(tile->piece){
-
-                if(tile->piece->type == PT_KING){
-                    if(tile->piece->owner == 0){
-                        return WINNER_PLAYER_1;
-                    }else if(tile->piece->owner == 1){
-                        return WINNER_PLAYER_0;
-                    }else{
-                        UNREACHABLE();
-                    }
-                }
-
-                tile->piece->location = nullptr;
-                delete tile->piece;
-            }
-
-            tile->piece = this;
-
-            // TODO what if this is a pawn and it reached the last tile
-
-            return WINNER_NO_WINNER_YET;
-
-        }
-    
-    private:
-
-
-        vector<Tile *> gen_valid_moves_pawn(){
-
-            vector<Tile *> moves = {};
-
-            if(forward_y == -1){
-
-                if(location->neighbour_up && !location->neighbour_up->piece){
-
-                    moves.push_back(location->neighbour_up);
-
-                    if(has_not_moved && location->neighbour_up->neighbour_up && !location->neighbour_up->neighbour_up->piece){
-
-                        moves.push_back(location->neighbour_up->neighbour_up);
-
-                    }
-
-                }
-
-                if(location->neighbour_upleft && (location->neighbour_upleft->piece && location->neighbour_upleft->piece->owner != owner)){
-                    moves.push_back(location->neighbour_upleft);
-                }
-
-                if(location->neighbour_upright && (location->neighbour_upright->piece && location->neighbour_upright->piece->owner != owner)){
-                    moves.push_back(location->neighbour_upright);
-                }
-
-                // TODO en passant
-
-            }else if(forward_y == 1){
-
-                if(location->neighbour_down && !location->neighbour_down->piece){
-
-                    moves.push_back(location->neighbour_down);
-
-                    if(has_not_moved && location->neighbour_down->neighbour_down && !location->neighbour_down->neighbour_down->piece){
-
-                        moves.push_back(location->neighbour_down->neighbour_down);
-
-                    }
-
-                }
-
-                if(location->neighbour_downleft && (location->neighbour_downleft->piece && location->neighbour_downleft->piece->owner != owner)){
-                    moves.push_back(location->neighbour_downleft);
-                }
-
-                if(location->neighbour_downright && (location->neighbour_downright->piece && location->neighbour_downright->piece->owner != owner)){
-                    moves.push_back(location->neighbour_downright);
-                }
-
-                // TODO en passant
-
-            }else{
-
-                UNREACHABLE();
-
-            }
-
-            return moves;
-
-        }
-
-        vector<Tile *> gen_valid_moves_knight(){
-
-            vector<Tile *> moves = {};
-
-            // TODO in the 4way chess map this won't be sufficient
-
-            if(location->neighbour_up){
-
-                if(location->neighbour_up->neighbour_upleft){
-                    if(!location->neighbour_up->neighbour_upleft->piece || (location->neighbour_up->neighbour_upleft->piece->owner != owner)){
-                        moves.push_back(location->neighbour_up->neighbour_upleft);
-                    }
-                }
-
-                if(location->neighbour_up->neighbour_upright){
-                    if(!location->neighbour_up->neighbour_upright->piece || (location->neighbour_up->neighbour_upright->piece->owner != owner)){
-                        moves.push_back(location->neighbour_up->neighbour_upright);
-                    }
-                }
-
-            }
-
-            if(location->neighbour_down){
-
-                if(location->neighbour_down->neighbour_downleft){
-                    if(!location->neighbour_down->neighbour_downleft->piece || (location->neighbour_down->neighbour_downleft->piece->owner != owner)){
-                        moves.push_back(location->neighbour_down->neighbour_downleft);
-                    }
-                }
-
-                if(location->neighbour_down->neighbour_downright){
-                    if(!location->neighbour_down->neighbour_downright->piece || (location->neighbour_down->neighbour_downright->piece->owner != owner)){
-                        moves.push_back(location->neighbour_down->neighbour_downright);
-                    }
-                }
-
-            }
-
-            if(location->neighbour_left){
-
-                if(location->neighbour_left->neighbour_upleft){
-                    if(!location->neighbour_left->neighbour_upleft->piece || (location->neighbour_left->neighbour_upleft->piece->owner != owner)){
-                        moves.push_back(location->neighbour_left->neighbour_upleft);
-                    }
-                }
-
-                if(location->neighbour_left->neighbour_downright){
-                    if(!location->neighbour_left->neighbour_downright->piece || (location->neighbour_left->neighbour_downright->piece->owner != owner)){
-                        moves.push_back(location->neighbour_left->neighbour_downright);
-                    }
-                }
-
-            }
-
-            if(location->neighbour_right){
-
-                if(location->neighbour_right->neighbour_upright){
-                    if(!location->neighbour_right->neighbour_upright->piece || (location->neighbour_right->neighbour_upright->piece->owner != owner)){
-                        moves.push_back(location->neighbour_right->neighbour_upright);
-                    }
-                }
-
-                if(location->neighbour_right->neighbour_downright){
-                    if(!location->neighbour_right->neighbour_downright->piece || (location->neighbour_right->neighbour_downright->piece->owner != owner)){
-                        moves.push_back(location->neighbour_right->neighbour_downright);
-                    }
-                }
-
-            }
-
-            return moves;
-
-        }
-
-        vector<Tile *> gen_valid_moves_bishop(){
-
-            vector<Tile *> moves = {};
-
-            {
-                Tile * pos = location;
-
-                while(true){
-                    pos = pos->neighbour_upleft;
-                    if(!pos){
-                        break;
-                    }
-
-                    if(pos->piece){
-                        if(pos->piece->owner != owner){
-                            moves.push_back(pos);
-                        }
-
-                        break;
-                    }
-                }
-            }
-
-            {
-                Tile * pos = location;
-
-                while(true){
-                    pos = pos->neighbour_upright;
-                    if(!pos){
-                        break;
-                    }
-
-                    if(pos->piece){
-                        if(pos->piece->owner != owner){
-                            moves.push_back(pos);
-                        }
-
-                        break;
-                    }
-                }
-            }
-
-            {
-                Tile * pos = location;
-
-                while(true){
-                    pos = pos->neighbour_downleft;
-                    if(!pos){
-                        break;
-                    }
-
-                    if(pos->piece){
-                        if(pos->piece->owner != owner){
-                            moves.push_back(pos);
-                        }
-
-                        break;
-                    }
-                }
-            }
-
-            {
-                Tile * pos = location;
-
-                while(true){
-                    pos = pos->neighbour_downright;
-                    if(!pos){
-                        break;
-                    }
-
-                    if(pos->piece){
-                        if(pos->piece->owner != owner){
-                            moves.push_back(pos);
-                        }
-
-                        break;
-                    }
-                }
-            }
-
-            return moves;
-
-        }
-
-        vector<Tile *> gen_valid_moves_rook(){
-
-            vector<Tile *> moves = {};
-
-            {
-                Tile * pos = location;
-
-                while(true){
-                    pos = pos->neighbour_up;
-                    if(!pos){
-                        break;
-                    }
-
-                    if(pos->piece){
-                        if(pos->piece->owner != owner){
-                            moves.push_back(pos);
-                        }
-
-                        break;
-                    }
-                }
-            }
-
-            {
-                Tile * pos = location;
-
-                while(true){
-                    pos = pos->neighbour_down;
-                    if(!pos){
-                        break;
-                    }
-
-                    if(pos->piece){
-                        if(pos->piece->owner != owner){
-                            moves.push_back(pos);
-                        }
-
-                        break;
-                    }
-                }
-            }
-
-            {
-                Tile * pos = location;
-
-                while(true){
-                    pos = pos->neighbour_left;
-                    if(!pos){
-                        break;
-                    }
-
-                    if(pos->piece){
-                        if(pos->piece->owner != owner){
-                            moves.push_back(pos);
-                        }
-
-                        break;
-                    }
-                }
-            }
-
-            {
-                Tile * pos = location;
-
-                while(true){
-                    pos = pos->neighbour_right;
-                    if(!pos){
-                        break;
-                    }
-
-                    if(pos->piece){
-                        if(pos->piece->owner != owner){
-                            moves.push_back(pos);
-                        }
-
-                        break;
-                    }
-                }
-            }
-
-            return moves;
-
-        }
-
-        vector<Tile *> gen_valid_moves_king(){
-
-            vector<Tile *> moves = {};
-
-            if(location->neighbour_up && (!location->neighbour_up->piece || location->neighbour_up->piece->owner != owner)){
-                moves.push_back(location->neighbour_up);
-            }
-
-            if(location->neighbour_upright && (!location->neighbour_upright->piece || location->neighbour_upright->piece->owner != owner)){
-                moves.push_back(location->neighbour_upright);
-            }
-
-            if(location->neighbour_right && (!location->neighbour_right->piece || location->neighbour_right->piece->owner != owner)){
-                moves.push_back(location->neighbour_right);
-            }
-
-            if(location->neighbour_downright && (!location->neighbour_downright->piece || location->neighbour_downright->piece->owner != owner)){
-                moves.push_back(location->neighbour_downright);
-            }
-
-            if(location->neighbour_down && (!location->neighbour_down->piece || location->neighbour_down->piece->owner != owner)){
-                moves.push_back(location->neighbour_down);
-            }
-
-            if(location->neighbour_downleft && (!location->neighbour_downleft->piece || location->neighbour_downleft->piece->owner != owner)){
-                moves.push_back(location->neighbour_downleft);
-            }
-
-            if(location->neighbour_left && (!location->neighbour_left->piece || location->neighbour_left->piece->owner != owner)){
-                moves.push_back(location->neighbour_left);
-            }
-
-            if(location->neighbour_upleft && (!location->neighbour_upleft->piece || location->neighbour_upleft->piece->owner != owner)){
-                moves.push_back(location->neighbour_upleft);
-            }
-
-            return moves;
-
-        }
-
-};
+}
 
 ///
 //////
@@ -666,11 +716,22 @@ class Board{
 
         }
 
-        // Board * duplicate(){
+        Board * duplicate(){
 
-        //     // TODO
+            Board * copy = new Board;
 
-        // }
+            for(Tile * tile : tiles){
+                Tile * copy_tile = tile->duplicate();
+                copy->tiles.push_back(copy_tile);
+            }
+
+            connect_neighbours();
+
+            copy->player_turn = player_turn;
+
+            return copy;
+
+        }
 
         void draw(){
 
