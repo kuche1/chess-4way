@@ -207,6 +207,11 @@ class Piece{
             location = tile;
 
             if(tile->piece){
+
+                if(tile->piece->type == PT_KING){
+                    ERR("TODO implement win");
+                }
+
                 tile->piece->location = nullptr;
                 delete tile->piece;
             }
@@ -675,7 +680,6 @@ class Board{
                 }
 
                 piece->move_to(valid_moves.at(0));
-                // TODO what if this is the knight we're taking
 
                 moved_something = true;
 
