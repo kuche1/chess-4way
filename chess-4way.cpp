@@ -328,9 +328,16 @@ int main(){
 
         // pawn
 
-        for(auto [icon, forward_y, y] : { make_tuple(ICON_PAWN_BLACK, -1, 0), make_tuple(ICON_PAWN_WHITE, 1, 7) }){
+        for(auto [icon, forward_y, y, x_start, x_step] : {
+            make_tuple(ICON_PAWN_BLACK,   -1, 1, 0, 1), make_tuple(ICON_PAWN_WHITE,   1, 6, 0, 1),
+            make_tuple(ICON_ROOK_BLACK,   -1, 0, 0, 7), make_tuple(ICON_ROOK_WHITE,   1, 7, 0, 7),
+            make_tuple(ICON_KNIGHT_BLACK, -1, 0, 1, 5), make_tuple(ICON_KNIGHT_WHITE, 1, 7, 1, 5),
+            make_tuple(ICON_BISHOP_BLACK, -1, 0, 2, 3), make_tuple(ICON_BISHOP_WHITE, 1, 7, 2, 3),
+            make_tuple(ICON_QUEEN_BLACK,  -1, 0, 3, 9), make_tuple(ICON_QUEEN_WHITE,  1, 7, 3, 9),
+            make_tuple(ICON_KING_BLACK,   -1, 0, 4, 9), make_tuple(ICON_KING_WHITE,   1, 7, 4, 9),
+        }){
 
-            for(int x=0; x<8; ++x){
+            for(int x=x_start; x<8; x+=x_step){
 
                 Piece * piece = new Piece{
                     .icon = icon,
@@ -359,6 +366,8 @@ int main(){
         
         cout << piece->icon;
     }
+
+    cout << endl;
 
     // Piece * pawn_black_0 = new Piece{
     //     .icon = ICON_PAWN_BLACK,
