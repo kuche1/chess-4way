@@ -28,9 +28,23 @@ using namespace std;
     cout << endl; \
 }
 
+#define ERR(...) { \
+    cout << "ERROR:" << endl; \
+    cout << __VA_ARGS__ << endl; \
+    cout << "(" << endl; \
+    cout << "    location:" << endl; \
+    cout << "        file `" << __FILE__ << "`" << endl; \
+    cout << "        line " << __LINE__ << endl; \
+    cout << "        function `" << __FUNCTION__ << "`" << endl; \
+    cout << "        commit id `" << COMMIT_ID << "`" << endl; \
+    cout << ")" << endl; \
+    cout << endl; \
+    exit(1); \
+}
+
 ///
 //////
-/////////// macro: icon
+/////////// define: icon
 //////
 ///
 
@@ -49,6 +63,24 @@ using namespace std;
 #define ICON_KING_BLACK   "♚"
 
 #define ICON_WARNING "⚠"
+
+///
+//////
+/////////// module: terminal escape code
+//////
+///
+
+void disp_clear(){
+    cout << "\033[H\033[J";
+}
+
+void disp_cur_set(int y, int x){
+    cout << "\033[";
+    cout << y + 1;
+    cout << ";";
+    cout << x + 1;
+    cout << "H";
+}
 
 ///
 //////
@@ -77,7 +109,8 @@ class Tile{
 
     public:
 
-        Piece * piece = nullptr;
+        int y;
+        int x;
 
         // horizontal/vertical
         Tile * neighbour_up = nullptr;
@@ -90,8 +123,7 @@ class Tile{
         Tile * neighbour_downleft = nullptr;
         Tile * neighbour_downright = nullptr;
 
-        int y;
-        int x;
+        Piece * piece = nullptr;
 
 };
 
@@ -109,14 +141,37 @@ class Board{
 
         Tile * get_tile_at(int y, int x){
 
-            size_t idx = y * 8 + x;
-
-            if(idx >= tiles.size()){
+            auto [fail_ci, idx] = this->calc_idx(y, x);
+            if(fail_ci){
                 return nullptr;
             }
 
             return tiles[idx];
 
+        }
+
+        void set_tile_at(int y, int x, Tile * tile){
+
+            auto [fail_ci, idx] = this->calc_idx(y, x);
+            if(fail_ci){
+                ERR("invalid tile y=" << y << " x=" << x);
+            }
+
+            if(tiles[idx]){
+                ERR("tile not empty y=" << y << " x=" << x);
+            }
+
+            tiles[idx] = tile;
+
+        }
+    
+    private:
+
+        pair<bool, ssize_t> calc_idx(int y, int x){
+            if(y < 0 || y >= 8 || x < 0 || x >= 8){
+                return {true, 0};
+            }
+            return {false, y * 8 + x};
         }
 
 };
@@ -221,6 +276,24 @@ int main(){
         }
 
     }
+
+    // ...
+
+    disp_clear();
+
+    for(Tile * tile : board->tiles){
+
+        Piece * piece = tile->piece;
+        if(!piece){
+            continue;
+        }
+
+        disp_cur_set(tile->y, tile->x);
+        
+        cout << piece->icon;
+    }
+
+    ERR("asdfg");
 
     // Piece * pawn_black_0 = new Piece{
     //     .icon = ICON_PAWN_BLACK,
