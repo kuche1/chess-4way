@@ -640,15 +640,8 @@ class Board{
 
         int player_turn = 0; // which player's turn is it
 
-        Board(){
-
-            spawn_tiles();
-
-            connect_neighbours();
-
-            place_pieces();
-
-        }
+        // Board(){
+        // }
 
         ~Board(){
 
@@ -662,6 +655,14 @@ class Board{
                 delete tile;
 
             }
+
+        }
+
+        void init(){
+
+            spawn_tiles();
+            connect_neighbours();
+            place_pieces();
 
         }
 
@@ -994,6 +995,7 @@ class Board{
 int main(){
 
     Board * board = new Board;
+    board->init();
 
     enum winner winner;
 
