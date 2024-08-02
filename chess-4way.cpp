@@ -230,6 +230,8 @@ class Piece{
 
         void move_to(Tile * tile){
 
+            has_not_moved = false;
+
             location->piece = nullptr;
             location = tile;
 
@@ -245,7 +247,7 @@ class Piece{
 
             tile->piece = this;
 
-            has_not_moved = false;
+            // TODO what if this is a pawn and it reached the last tile
 
         }
     
@@ -280,8 +282,6 @@ class Piece{
 
                 // TODO en passant
 
-                // TODO promotion if end of board reached
-
             }else if(forward_y == 1){
 
                 if(location->neighbour_down && !location->neighbour_down->piece){
@@ -305,8 +305,6 @@ class Piece{
                 }
 
                 // TODO en passant
-
-                // TODO promotion if end of board reached
 
             }else{
 
@@ -718,7 +716,6 @@ class Board{
                     continue;
                 }
 
-                // piece->move_to(valid_moves.at(0));
                 piece->move_to(vec_get_random_element(valid_moves));
 
                 moved_something = true;
