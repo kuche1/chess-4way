@@ -292,7 +292,7 @@ class Board{
                 int draw_y = tile->y * 2 + 1;
                 int draw_x = tile->x * 4 + 2;
 
-                { // draw borders ineffeciently
+                { // draw borders (ineffeciently)
 
                     disp_cur_set(draw_y, draw_x - 2);
                     cout << "|";
@@ -300,11 +300,11 @@ class Board{
                     disp_cur_set(draw_y, draw_x + 2);
                     cout << "|";
 
-                    disp_cur_set(draw_y - 1, draw_x);
-                    cout << "-";
+                    disp_cur_set(draw_y - 1, draw_x - 1);
+                    cout << "---";
 
-                    disp_cur_set(draw_y + 1, draw_x);
-                    cout << "-";
+                    disp_cur_set(draw_y + 1, draw_x - 1);
+                    cout << "---";
 
                 }
                 
