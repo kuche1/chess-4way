@@ -231,11 +231,11 @@ class Piece{
 
             if(forward_y == -1){
 
-                if(location->neighbour_up && (!location->neighbour_up->piece || location->neighbour_up->piece->owner != owner)){
+                if(location->neighbour_up && !location->neighbour_up->piece){
 
                     moves.push_back(location->neighbour_up);
 
-                    if(has_not_moved && location->neighbour_up->neighbour_up && (!location->neighbour_up->neighbour_up->piece || location->neighbour_up->neighbour_up->piece->owner != owner)){
+                    if(has_not_moved && location->neighbour_up->neighbour_up && !location->neighbour_up->neighbour_up->piece){
 
                         moves.push_back(location->neighbour_up->neighbour_up);
 
@@ -251,11 +251,11 @@ class Piece{
 
             }else if(forward_y == 1){
 
-                if(location->neighbour_down && (!location->neighbour_down->piece || location->neighbour_down->piece->owner != owner)){
+                if(location->neighbour_down && !location->neighbour_down->piece){
 
                     moves.push_back(location->neighbour_down);
 
-                    if(has_not_moved && location->neighbour_down->neighbour_down && (!location->neighbour_down->neighbour_down->piece || location->neighbour_down->neighbour_down->piece->owner != owner)){
+                    if(has_not_moved && location->neighbour_down->neighbour_down && !location->neighbour_down->neighbour_down->piece){
 
                         moves.push_back(location->neighbour_down->neighbour_down);
 
