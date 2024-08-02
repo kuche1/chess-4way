@@ -243,11 +243,17 @@ class Piece{
 
                 }
 
+                if(location->neighbour_upleft && (location->neighbour_upleft->piece && location->neighbour_upleft->piece->owner != owner)){
+                    moves.push_back(location->neighbour_upleft);
+                }
+
+                if(location->neighbour_upright && (location->neighbour_upright->piece && location->neighbour_upright->piece->owner != owner)){
+                    moves.push_back(location->neighbour_upright);
+                }
+
                 // TODO en passant
 
                 // TODO promotion if end of board reached
-
-                // TODO take
 
             }else if(forward_y == 1){
 
@@ -263,11 +269,17 @@ class Piece{
 
                 }
 
+                if(location->neighbour_downleft && (location->neighbour_downleft->piece && location->neighbour_downleft->piece->owner != owner)){
+                    moves.push_back(location->neighbour_downleft);
+                }
+
+                if(location->neighbour_downright && (location->neighbour_downright->piece && location->neighbour_downright->piece->owner != owner)){
+                    moves.push_back(location->neighbour_downright);
+                }
+
                 // TODO en passant
 
                 // TODO promotion if end of board reached
-
-                // TODO take
 
             }else{
 
