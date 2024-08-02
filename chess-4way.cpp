@@ -92,9 +92,9 @@ class Piece{
 
     public:
 
-        string icon = ICON_WARNING;
+        string icon;
 
-        int forward_y = 0;
+        int forward_y;
         // int forward_x = 0; // this only makes sense in 4way chess
 
 };
@@ -108,6 +108,14 @@ class Piece{
 class Tile{
 
     public:
+
+        ~Tile(){
+
+            if(piece){
+                delete piece;
+            }
+
+        }
 
         int y;
         int x;
@@ -141,7 +149,7 @@ class Board{
 
         Board(){
 
-            if(this->tiles.size() != 0){
+            if(tiles.size() != 0){
                 ERR("already initialised");
             }
 
@@ -153,7 +161,7 @@ class Board{
                         .x = x,
                     };
 
-                    this->tiles.push_back(tile);
+                    tiles.push_back(tile);
 
                 }
             }
@@ -162,7 +170,7 @@ class Board{
 
         ~Board(){
 
-            for(Tile * tile : this->tiles){
+            for(Tile * tile : tiles){
 
                 delete tile;
 
@@ -172,12 +180,12 @@ class Board{
 
         void connect_neighbours(){
 
-            for(Tile * tile : this->tiles){
+            for(Tile * tile : tiles){
 
                 { // up
                     int nei_up_y = tile->y - 1;
                     int nei_up_x = tile->x;
-                    Tile * nei = this->get_tile_at(nei_up_y, nei_up_x);
+                    Tile * nei = get_tile_at(nei_up_y, nei_up_x);
                     if(nei){
                         tile->neighbour_up = nei;
                     }
@@ -186,7 +194,7 @@ class Board{
                 { // down
                     int nei_up_y = tile->y + 1;
                     int nei_up_x = tile->x;
-                    Tile * nei = this->get_tile_at(nei_up_y, nei_up_x);
+                    Tile * nei = get_tile_at(nei_up_y, nei_up_x);
                     if(nei){
                         tile->neighbour_down = nei;
                     }
@@ -195,7 +203,7 @@ class Board{
                 { // left
                     int nei_up_y = tile->y;
                     int nei_up_x = tile->x - 1;
-                    Tile * nei = this->get_tile_at(nei_up_y, nei_up_x);
+                    Tile * nei = get_tile_at(nei_up_y, nei_up_x);
                     if(nei){
                         tile->neighbour_left = nei;
                     }
@@ -204,7 +212,7 @@ class Board{
                 { // right
                     int nei_up_y = tile->y;
                     int nei_up_x = tile->x + 1;
-                    Tile * nei = this->get_tile_at(nei_up_y, nei_up_x);
+                    Tile * nei = get_tile_at(nei_up_y, nei_up_x);
                     if(nei){
                         tile->neighbour_right = nei;
                     }
@@ -213,7 +221,7 @@ class Board{
                 { // up left
                     int nei_up_y = tile->y - 1;
                     int nei_up_x = tile->x - 1;
-                    Tile * nei = this->get_tile_at(nei_up_y, nei_up_x);
+                    Tile * nei = get_tile_at(nei_up_y, nei_up_x);
                     if(nei){
                         tile->neighbour_upleft = nei;
                     }
@@ -222,7 +230,7 @@ class Board{
                 { // up right
                     int nei_up_y = tile->y - 1;
                     int nei_up_x = tile->x + 1;
-                    Tile * nei = this->get_tile_at(nei_up_y, nei_up_x);
+                    Tile * nei = get_tile_at(nei_up_y, nei_up_x);
                     if(nei){
                         tile->neighbour_upright = nei;
                     }
@@ -231,7 +239,7 @@ class Board{
                 { // down left
                     int nei_up_y = tile->y + 1;
                     int nei_up_x = tile->x - 1;
-                    Tile * nei = this->get_tile_at(nei_up_y, nei_up_x);
+                    Tile * nei = get_tile_at(nei_up_y, nei_up_x);
                     if(nei){
                         tile->neighbour_downleft = nei;
                     }
@@ -240,13 +248,28 @@ class Board{
                 { // down right
                     int nei_up_y = tile->y + 1;
                     int nei_up_x = tile->x + 1;
-                    Tile * nei = this->get_tile_at(nei_up_y, nei_up_x);
+                    Tile * nei = get_tile_at(nei_up_y, nei_up_x);
                     if(nei){
                         tile->neighbour_downright = nei;
                     }
                 }
 
             }
+
+        }
+
+        void place_piece(int y, int x, Piece * piece){
+
+            auto [fail_ci, idx] = calc_idx(y, x);
+            if(fail_ci){
+                ERR("invalid position y=" << y << " x=" << x);
+            }
+
+            if(tiles[idx]->piece){
+                ERR("there is already a piece at y=" << y << " x=" << x);
+            }
+
+            tiles[idx]->piece = piece;
 
         }
 
@@ -261,7 +284,7 @@ class Board{
 
         Tile * get_tile_at(int y, int x){
 
-            auto [fail_ci, idx] = this->calc_idx(y, x);
+            auto [fail_ci, idx] = calc_idx(y, x);
             if(fail_ci){
                 return nullptr;
             }
@@ -272,7 +295,7 @@ class Board{
 
         void set_tile_at(int y, int x, Tile * tile){
 
-            auto [fail_ci, idx] = this->calc_idx(y, x);
+            auto [fail_ci, idx] = calc_idx(y, x);
             if(fail_ci){
                 ERR("invalid tile y=" << y << " x=" << x);
             }
@@ -296,10 +319,32 @@ class Board{
 int main(){
 
     Board * board = new Board;
-    
+
     board->connect_neighbours();
 
-    // ...
+    // place pieces
+
+    {
+
+        // pawn
+
+        for(auto [icon, forward_y, y] : { make_tuple(ICON_PAWN_BLACK, -1, 0), make_tuple(ICON_PAWN_WHITE, 1, 7) }){
+
+            for(int x=0; x<8; ++x){
+
+                Piece * piece = new Piece{
+                    .icon = icon,
+                    .forward_y = forward_y,
+                };
+
+                board->place_piece(y, x, piece);
+            }
+
+        }
+
+    }
+
+    // draw board
 
     disp_clear();
 
