@@ -166,6 +166,10 @@ class Board{
                 }
             }
 
+            connect_neighbours();
+
+            place_pieces();
+
         }
 
         ~Board(){
@@ -175,6 +179,96 @@ class Board{
                 delete tile;
 
             }
+
+        }
+
+        void draw(){
+
+            disp_clear();
+
+            for(Tile * tile : tiles){
+
+                int draw_y = tile->y * 2 + 1;
+                int draw_x = tile->x * 4 + 2;
+
+                { // draw borders (ineffeciently)
+
+                    disp_cur_set(draw_y, draw_x - 2);
+                    cout << "|";
+
+                    disp_cur_set(draw_y, draw_x + 2);
+                    cout << "|";
+
+                    disp_cur_set(draw_y - 1, draw_x - 1);
+                    cout << "---";
+
+                    disp_cur_set(draw_y + 1, draw_x - 1);
+                    cout << "---";
+
+                }
+
+                Piece * piece = tile->piece;
+                if(!piece){
+                    continue;
+                }
+
+                disp_cur_set(draw_y, draw_x);
+                
+                cout << piece->icon;
+            }
+
+            cout << endl;
+            cout << endl;
+
+        }
+
+    private:
+
+        pair<bool, ssize_t> calc_idx(int y, int x){
+            if(y < 0 || y >= 8 || x < 0 || x >= 8){
+                return {true, 0};
+            }
+            return {false, y * 8 + x};
+        }
+
+        Tile * get_tile_at(int y, int x){
+
+            auto [fail_ci, idx] = calc_idx(y, x);
+            if(fail_ci){
+                return nullptr;
+            }
+
+            return tiles[idx];
+
+        }
+
+        void set_tile_at(int y, int x, Tile * tile){
+
+            auto [fail_ci, idx] = calc_idx(y, x);
+            if(fail_ci){
+                ERR("invalid tile y=" << y << " x=" << x);
+            }
+
+            if(tiles[idx]){
+                ERR("tile not empty y=" << y << " x=" << x);
+            }
+
+            tiles[idx] = tile;
+
+        }
+
+        void place_piece(int y, int x, Piece * piece){
+
+            auto [fail_ci, idx] = calc_idx(y, x);
+            if(fail_ci){
+                ERR("invalid position y=" << y << " x=" << x);
+            }
+
+            if(tiles[idx]->piece){
+                ERR("there is already a piece at y=" << y << " x=" << x);
+            }
+
+            tiles[idx]->piece = piece;
 
         }
 
@@ -283,96 +377,6 @@ class Board{
 
         }
 
-        void draw(){
-
-            disp_clear();
-
-            for(Tile * tile : tiles){
-
-                int draw_y = tile->y * 2 + 1;
-                int draw_x = tile->x * 4 + 2;
-
-                { // draw borders (ineffeciently)
-
-                    disp_cur_set(draw_y, draw_x - 2);
-                    cout << "|";
-
-                    disp_cur_set(draw_y, draw_x + 2);
-                    cout << "|";
-
-                    disp_cur_set(draw_y - 1, draw_x - 1);
-                    cout << "---";
-
-                    disp_cur_set(draw_y + 1, draw_x - 1);
-                    cout << "---";
-
-                }
-
-                Piece * piece = tile->piece;
-                if(!piece){
-                    continue;
-                }
-
-                disp_cur_set(draw_y, draw_x);
-                
-                cout << piece->icon;
-            }
-
-            cout << endl;
-            cout << endl;
-
-        }
-
-    private:
-
-        pair<bool, ssize_t> calc_idx(int y, int x){
-            if(y < 0 || y >= 8 || x < 0 || x >= 8){
-                return {true, 0};
-            }
-            return {false, y * 8 + x};
-        }
-
-        Tile * get_tile_at(int y, int x){
-
-            auto [fail_ci, idx] = calc_idx(y, x);
-            if(fail_ci){
-                return nullptr;
-            }
-
-            return tiles[idx];
-
-        }
-
-        void set_tile_at(int y, int x, Tile * tile){
-
-            auto [fail_ci, idx] = calc_idx(y, x);
-            if(fail_ci){
-                ERR("invalid tile y=" << y << " x=" << x);
-            }
-
-            if(tiles[idx]){
-                ERR("tile not empty y=" << y << " x=" << x);
-            }
-
-            tiles[idx] = tile;
-
-        }
-
-        void place_piece(int y, int x, Piece * piece){
-
-            auto [fail_ci, idx] = calc_idx(y, x);
-            if(fail_ci){
-                ERR("invalid position y=" << y << " x=" << x);
-            }
-
-            if(tiles[idx]->piece){
-                ERR("there is already a piece at y=" << y << " x=" << x);
-            }
-
-            tiles[idx]->piece = piece;
-
-        }
-
 };
 
 ///
@@ -385,15 +389,7 @@ int main(){
 
     Board * board = new Board;
 
-    {
-
-        board->connect_neighbours();
-
-        board->place_pieces();
-
-        board->draw();
-
-    }
+    board->draw();
 
     delete board;
 
