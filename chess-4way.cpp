@@ -238,7 +238,8 @@ class Piece{
             if(tile->piece){
 
                 if(tile->piece->type == PT_KING){
-                    ERR("TODO implement win");
+                    cout << "Looser: " << tile->piece->owner << endl;
+                    exit(0);
                 }
 
                 tile->piece->location = nullptr;
@@ -725,7 +726,8 @@ class Board{
             }
 
             if(!moved_something){
-                ERR("todo implement stalemates");
+                cout << "Stalemate" << endl;
+                exit(0);
             }
 
         }
