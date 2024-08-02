@@ -283,6 +283,47 @@ class Board{
 
         }
 
+        void draw(){
+
+            disp_clear();
+
+            for(Tile * tile : tiles){
+
+                int draw_y = tile->y * 2 + 1;
+                int draw_x = tile->x * 4 + 2;
+
+                { // draw borders ineffeciently
+
+                    disp_cur_set(draw_y, draw_x - 2);
+                    cout << "|";
+
+                    disp_cur_set(draw_y, draw_x + 2);
+                    cout << "|";
+
+                    disp_cur_set(draw_y - 1, draw_x);
+                    cout << "-";
+
+                    disp_cur_set(draw_y + 1, draw_x);
+                    cout << "-";
+
+                }
+                
+
+                Piece * piece = tile->piece;
+                if(!piece){
+                    continue;
+                }
+
+                disp_cur_set(draw_y, draw_x);
+                
+                cout << piece->icon;
+            }
+
+            cout << endl;
+            cout << endl;
+
+        }
+
     private:
 
         pair<bool, ssize_t> calc_idx(int y, int x){
@@ -345,37 +386,15 @@ int main(){
 
     Board * board = new Board;
 
-    board->connect_neighbours();
+    {
 
-    board->place_pieces();
+        board->connect_neighbours();
 
-    // draw board
+        board->place_pieces();
 
-    disp_clear();
+        board->draw();
 
-    for(Tile * tile : board->tiles){
-
-        Piece * piece = tile->piece;
-        if(!piece){
-            continue;
-        }
-
-        disp_cur_set(tile->y, tile->x);
-        
-        cout << piece->icon;
     }
-
-    cout << endl;
-
-    // Piece * pawn_black_0 = new Piece{
-    //     .icon = ICON_PAWN_BLACK,
-    //     .forward_y = -1,
-    // };
-
-    // DBG(ICON_PAWN_BLACK);
-
-    // DBG(pawn_black_0->icon);
-    // DBG(pawn_black_0->forward_y);
 
     delete board;
 
