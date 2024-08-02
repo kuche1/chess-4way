@@ -174,7 +174,7 @@ class Piece{
 
                         moves.push_back(location->neighbour_up);
 
-                        if(has_not_moved){
+                        if(has_not_moved){ // TODO check if anyone is in the way
                             if(location->neighbour_up->neighbour_up){
                                 moves.push_back(location->neighbour_up->neighbour_up);
                             }
