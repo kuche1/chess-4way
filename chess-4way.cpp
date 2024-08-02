@@ -642,22 +642,7 @@ class Board{
 
         Board(){
 
-            if(tiles.size() != 0){
-                ERR("already initialised");
-            }
-
-            for(int y=0; y<8; ++y){
-                for(int x=0; x<8; ++x){
-
-                    Tile * tile = new Tile{
-                        .y = y,
-                        .x = x,
-                    };
-
-                    tiles.push_back(tile);
-
-                }
-            }
+            spawn_tiles();
 
             connect_neighbours();
 
@@ -679,6 +664,12 @@ class Board{
             }
 
         }
+
+        // Board * duplicate(){
+
+        //     // TODO
+
+        // }
 
         void draw(){
 
@@ -848,6 +839,27 @@ class Board{
             }
 
             tiles[idx] = tile;
+
+        }
+
+        void spawn_tiles(){
+
+            if(tiles.size() != 0){
+                ERR("already initialised");
+            }
+
+            for(int y=0; y<8; ++y){
+                for(int x=0; x<8; ++x){
+
+                    Tile * tile = new Tile{
+                        .y = y,
+                        .x = x,
+                    };
+
+                    tiles.push_back(tile);
+
+                }
+            }
 
         }
 
