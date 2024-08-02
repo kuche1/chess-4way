@@ -8,6 +8,7 @@
 #include <iostream>
 #include <vector>
 #include <cassert>
+#include <random>
 
 ///
 //////
@@ -72,6 +73,32 @@ using namespace std;
 ///
 
 class Piece;
+
+///
+//////
+/////////// function: generic
+//////
+///
+
+int random_int(int from, int to){
+    random_device rd;
+    mt19937 gen(rd()); // seed
+    uniform_int_distribution<> distr(from, to);
+    return distr(gen);
+}
+
+///
+//////
+/////////// template: generic
+//////
+///
+
+template<typename T>
+T vec_get_random_element(vector<T>& vec){
+    int length = static_cast<int>(vec.size());
+    size_t index = random_int(0, length - 1);
+    return vec[index];
+}
 
 ///
 //////
@@ -691,7 +718,8 @@ class Board{
                     continue;
                 }
 
-                piece->move_to(valid_moves.at(0));
+                // piece->move_to(valid_moves.at(0));
+                piece->move_to(vec_get_random_element(valid_moves));
 
                 moved_something = true;
 
