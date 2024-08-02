@@ -307,7 +307,6 @@ class Board{
                     cout << "---";
 
                 }
-                
 
                 Piece * piece = tile->piece;
                 if(!piece){
