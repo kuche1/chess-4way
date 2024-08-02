@@ -716,7 +716,10 @@ class Board{
             }
 
             cout << endl;
+
             cout << endl;
+
+            cout << "Material: " << count_material() << endl;
 
         }
 
@@ -918,6 +921,54 @@ class Board{
 
             }
 
+        }
+
+        int count_material(){
+
+            int count = 0;
+
+            for(Tile * tile : tiles){
+
+                if(!tile->piece){
+                    continue;
+                }
+
+                int value;
+
+                switch(tile->piece->type){
+                    case PT_PAWN:
+                        value = 1;
+                        break;
+                    case PT_KNIGHT:
+                        value = 4;
+                        break;
+                    case PT_BISHOP:
+                        value = 3;
+                        break;
+                    case PT_ROOK:
+                        value = 5;
+                        break;
+                    case PT_QUEEN:
+                        value = 9;
+                        break;
+                    case PT_KING:
+                        value = 200;
+                        break;
+                }
+
+                if(tile->piece->owner == 0){
+                    value *= -1;
+                }else if(tile->piece->owner == 1){
+                    value *= 1;
+                }else{
+                    UNREACHABLE();
+                }
+
+                count += value;
+
+            }
+
+            return count;
         }
 
 };
