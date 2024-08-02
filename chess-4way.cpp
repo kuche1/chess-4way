@@ -166,35 +166,131 @@ class Piece{
 
             vector<Tile *> moves = {};
 
-            if(type == PT_PAWN){
+            switch(type){
 
-                if(forward_y == -1){
+                case PT_PAWN:{ // TODO make into its own function
 
-                    if(location->neighbour_up){
+                    if(forward_y == -1){
 
-                        moves.push_back(location->neighbour_up);
+                        if(location->neighbour_up){
 
-                        if(has_not_moved && !location->neighbour_up->piece){
+                            moves.push_back(location->neighbour_up);
 
-                            if(location->neighbour_up->neighbour_up){
-                                moves.push_back(location->neighbour_up->neighbour_up);
+                            if(has_not_moved && !location->neighbour_up->piece){
+
+                                if(location->neighbour_up->neighbour_up){
+                                    moves.push_back(location->neighbour_up->neighbour_up);
+                                }
+
                             }
 
                         }
 
+                        // TODO en passant
+
+                    }else{
+
+                        ERR("todo black");
+
                     }
 
-                    // TODO en passant
+                }break;
 
-                }else{
+                case PT_KNIGHT:{ // TODO make into its own function
 
-                    ERR("todo black");
+                    if(location->neighbour_up){
 
-                }
+                        if(location->neighbour_up->neighbour_upleft){
+                            if(!location->neighbour_up->neighbour_upleft->piece || (location->neighbour_up->neighbour_upleft->piece->owner != owner)){
+                                moves.push_back(location->neighbour_up->neighbour_upleft);
+                            }
+                        }
 
-            }else{
+                        if(location->neighbour_up->neighbour_upright){
+                            if(!location->neighbour_up->neighbour_upright->piece || (location->neighbour_up->neighbour_upright->piece->owner != owner)){
+                                moves.push_back(location->neighbour_up->neighbour_upright);
+                            }
+                        }
 
-                ERR("todo pieces");
+                    }
+
+                    if(location->neighbour_down){
+
+                        if(location->neighbour_down->neighbour_downleft){
+                            if(!location->neighbour_down->neighbour_downleft->piece || (location->neighbour_down->neighbour_downleft->piece->owner != owner)){
+                                moves.push_back(location->neighbour_down->neighbour_downleft);
+                            }
+                        }
+
+                        if(location->neighbour_down->neighbour_downright){
+                            if(!location->neighbour_down->neighbour_downright->piece || (location->neighbour_down->neighbour_downright->piece->owner != owner)){
+                                moves.push_back(location->neighbour_down->neighbour_downright);
+                            }
+                        }
+
+                    }
+
+                    if(location->neighbour_left){
+
+                        if(location->neighbour_left->neighbour_upleft){
+                            if(!location->neighbour_left->neighbour_upleft->piece || (location->neighbour_left->neighbour_upleft->piece->owner != owner)){
+                                moves.push_back(location->neighbour_left->neighbour_upleft);
+                            }
+                        }
+
+                        if(location->neighbour_left->neighbour_downright){
+                            if(!location->neighbour_left->neighbour_downright->piece || (location->neighbour_left->neighbour_downright->piece->owner != owner)){
+                                moves.push_back(location->neighbour_left->neighbour_downright);
+                            }
+                        }
+
+                    }
+
+                    if(location->neighbour_right){
+
+                        if(location->neighbour_right->neighbour_upright){
+                            if(!location->neighbour_right->neighbour_upright->piece || (location->neighbour_right->neighbour_upright->piece->owner != owner)){
+                                moves.push_back(location->neighbour_right->neighbour_upright);
+                            }
+                        }
+
+                        if(location->neighbour_right->neighbour_downright){
+                            if(!location->neighbour_right->neighbour_downright->piece || (location->neighbour_right->neighbour_downright->piece->owner != owner)){
+                                moves.push_back(location->neighbour_right->neighbour_downright);
+                            }
+                        }
+
+                    }
+
+                }break;
+
+                case PT_BISHOP:{
+
+                    moves = gen_valid_moves_bishop();
+
+                }break;
+
+                case PT_ROOK:{
+
+                    moves = gen_valid_moves_rook();
+
+                }break;
+
+                case PT_QUEEN:{
+
+                    moves = gen_valid_moves_bishop();
+
+                    for(Tile * rook_move : gen_valid_moves_rook()){
+                        moves.push_back(rook_move);
+                    }
+
+                }break;
+
+                case PT_KING:{
+
+                    moves = gen_valid_moves_king();
+
+                }break;
 
             }
 
@@ -211,6 +307,216 @@ class Piece{
             location = tile;
 
             has_not_moved = false;
+
+        }
+    
+    private:
+
+        vector<Tile *> gen_valid_moves_bishop(){
+
+            vector<Tile *> moves = {};
+
+            {
+                Tile * pos = location;
+
+                while(true){
+                    pos = pos->neighbour_upleft;
+                    if(!pos){
+                        break;
+                    }
+
+                    if(pos->piece){
+                        if(pos->piece->owner != owner){
+                            moves.push_back(location->neighbour_right->neighbour_downright);
+                        }
+
+                        break;
+                    }
+                }
+            }
+
+            {
+                Tile * pos = location;
+
+                while(true){
+                    pos = pos->neighbour_upright;
+                    if(!pos){
+                        break;
+                    }
+
+                    if(pos->piece){
+                        if(pos->piece->owner != owner){
+                            moves.push_back(location->neighbour_right->neighbour_downright);
+                        }
+
+                        break;
+                    }
+                }
+            }
+
+            {
+                Tile * pos = location;
+
+                while(true){
+                    pos = pos->neighbour_downleft;
+                    if(!pos){
+                        break;
+                    }
+
+                    if(pos->piece){
+                        if(pos->piece->owner != owner){
+                            moves.push_back(location->neighbour_right->neighbour_downright);
+                        }
+
+                        break;
+                    }
+                }
+            }
+
+            {
+                Tile * pos = location;
+
+                while(true){
+                    pos = pos->neighbour_downright;
+                    if(!pos){
+                        break;
+                    }
+
+                    if(pos->piece){
+                        if(pos->piece->owner != owner){
+                            moves.push_back(location->neighbour_right->neighbour_downright);
+                        }
+
+                        break;
+                    }
+                }
+            }
+
+            return moves;
+
+        }
+
+        vector<Tile *> gen_valid_moves_rook(){
+
+            vector<Tile *> moves = {};
+
+            {
+                Tile * pos = location;
+
+                while(true){
+                    pos = pos->neighbour_up;
+                    if(!pos){
+                        break;
+                    }
+
+                    if(pos->piece){
+                        if(pos->piece->owner != owner){
+                            moves.push_back(location->neighbour_right->neighbour_downright);
+                        }
+
+                        break;
+                    }
+                }
+            }
+
+            {
+                Tile * pos = location;
+
+                while(true){
+                    pos = pos->neighbour_down;
+                    if(!pos){
+                        break;
+                    }
+
+                    if(pos->piece){
+                        if(pos->piece->owner != owner){
+                            moves.push_back(location->neighbour_right->neighbour_downright);
+                        }
+
+                        break;
+                    }
+                }
+            }
+
+            {
+                Tile * pos = location;
+
+                while(true){
+                    pos = pos->neighbour_left;
+                    if(!pos){
+                        break;
+                    }
+
+                    if(pos->piece){
+                        if(pos->piece->owner != owner){
+                            moves.push_back(location->neighbour_right->neighbour_downright);
+                        }
+
+                        break;
+                    }
+                }
+            }
+
+            {
+                Tile * pos = location;
+
+                while(true){
+                    pos = pos->neighbour_right;
+                    if(!pos){
+                        break;
+                    }
+
+                    if(pos->piece){
+                        if(pos->piece->owner != owner){
+                            moves.push_back(location->neighbour_right->neighbour_downright);
+                        }
+
+                        break;
+                    }
+                }
+            }
+
+            return moves;
+
+        }
+
+        vector<Tile *> gen_valid_moves_king(){
+
+            vector<Tile *> moves = {};
+
+            if(location->neighbour_up && (!location->neighbour_up->piece || location->neighbour_up->piece->owner != owner)){
+                moves.push_back(location->neighbour_up);
+            }
+
+            if(location->neighbour_upright && (!location->neighbour_upright->piece || location->neighbour_upright->piece->owner != owner)){
+                moves.push_back(location->neighbour_upright);
+            }
+
+            if(location->neighbour_right && (!location->neighbour_right->piece || location->neighbour_right->piece->owner != owner)){
+                moves.push_back(location->neighbour_right);
+            }
+
+            if(location->neighbour_downright && (!location->neighbour_downright->piece || location->neighbour_downright->piece->owner != owner)){
+                moves.push_back(location->neighbour_downright);
+            }
+
+            if(location->neighbour_down && (!location->neighbour_down->piece || location->neighbour_down->piece->owner != owner)){
+                moves.push_back(location->neighbour_down);
+            }
+
+            if(location->neighbour_downleft && (!location->neighbour_downleft->piece || location->neighbour_downleft->piece->owner != owner)){
+                moves.push_back(location->neighbour_downleft);
+            }
+
+            if(location->neighbour_left && (!location->neighbour_left->piece || location->neighbour_left->piece->owner != owner)){
+                moves.push_back(location->neighbour_left);
+            }
+
+            if(location->neighbour_upleft && (!location->neighbour_upleft->piece || location->neighbour_upleft->piece->owner != owner)){
+                moves.push_back(location->neighbour_upleft);
+            }
+
+            return moves;
 
         }
 
@@ -475,7 +781,7 @@ class Board{
                 make_tuple(ICON_KNIGHT_BLACK, PT_KNIGHT, 1, 1, 0, 1, 5), make_tuple(ICON_KNIGHT_WHITE, PT_KNIGHT, 0, -1, 7, 1, 5),
                 make_tuple(ICON_BISHOP_BLACK, PT_BISHOP, 1, 1, 0, 2, 3), make_tuple(ICON_BISHOP_WHITE, PT_BISHOP, 0, -1, 7, 2, 3),
                 make_tuple(ICON_QUEEN_BLACK,  PT_QUEEN,  1, 1, 0, 3, 9), make_tuple(ICON_QUEEN_WHITE,  PT_QUEEN,  0, -1, 7, 3, 9),
-                make_tuple(ICON_KING_BLACK,   PT_KNIGHT, 1, 1, 0, 4, 9), make_tuple(ICON_KING_WHITE,   PT_KNIGHT, 0, -1, 7, 4, 9),
+                make_tuple(ICON_KING_BLACK,   PT_KING,   1, 1, 0, 4, 9), make_tuple(ICON_KING_WHITE,   PT_KING  , 0, -1, 7, 4, 9),
             }){
 
                 for(int x=x_start; x<8; x+=x_step){
