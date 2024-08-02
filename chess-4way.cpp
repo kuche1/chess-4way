@@ -160,6 +160,8 @@ class Piece{
 
         Tile * location;
 
+        bool has_not_moved = true;
+
         vector<Tile *> get_valid_moves(){
 
             vector<Tile *> moves = {};
@@ -169,8 +171,18 @@ class Piece{
                 if(forward_y == -1){
 
                     if(location->neighbour_up){
+
                         moves.push_back(location->neighbour_up);
+
+                        if(has_not_moved){
+                            if(location->neighbour_up->neighbour_up){
+                                moves.push_back(location->neighbour_up->neighbour_up);
+                            }
+                        }
+
                     }
+
+                    // TODO en passant
 
                 }else{
 
@@ -195,6 +207,8 @@ class Piece{
             assert(!tile->piece);
             tile->piece = this;
             location = tile;
+
+            has_not_moved = false;
 
         }
 
