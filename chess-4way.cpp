@@ -725,7 +725,7 @@ class Board{
             int player = player_turn;
             player_turn = !player_turn;
 
-            bool moved_something = false;
+            vector<pair<Piece *, vector<Tile *>>> all_valid_moves = {};
 
             for(Tile * tile : tiles){
 
@@ -744,21 +744,21 @@ class Board{
                     continue;
                 }
 
-                {
-                    enum winner winner = piece->move_to(vec_get_random_element(valid_moves));
-                    if(winner != WINNER_NO_WINNER_YET){
-                        return winner;
-                    }
-                }
-
-                moved_something = true;
-
-                break;
+                all_valid_moves.push_back({piece, valid_moves});
 
             }
 
-            if(!moved_something){
+            if(all_valid_moves.size() <= 0){
                 return WINNER_STALEMATE;
+            }
+
+            {
+                auto [piece, valid_moves] = vec_get_random_element(all_valid_moves);
+
+                enum winner winner = piece->move_to(vec_get_random_element(valid_moves));
+                if(winner != WINNER_NO_WINNER_YET){
+                    return winner;
+                }
             }
 
             return WINNER_NO_WINNER_YET;
