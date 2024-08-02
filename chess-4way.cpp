@@ -258,18 +258,28 @@ class Board{
 
         }
 
-        void place_piece(int y, int x, Piece * piece){
+        void place_pieces(){
 
-            auto [fail_ci, idx] = calc_idx(y, x);
-            if(fail_ci){
-                ERR("invalid position y=" << y << " x=" << x);
+            for(auto [icon, forward_y, y, x_start, x_step] : {
+                make_tuple(ICON_PAWN_BLACK,   -1, 1, 0, 1), make_tuple(ICON_PAWN_WHITE,   1, 6, 0, 1),
+                make_tuple(ICON_ROOK_BLACK,   -1, 0, 0, 7), make_tuple(ICON_ROOK_WHITE,   1, 7, 0, 7),
+                make_tuple(ICON_KNIGHT_BLACK, -1, 0, 1, 5), make_tuple(ICON_KNIGHT_WHITE, 1, 7, 1, 5),
+                make_tuple(ICON_BISHOP_BLACK, -1, 0, 2, 3), make_tuple(ICON_BISHOP_WHITE, 1, 7, 2, 3),
+                make_tuple(ICON_QUEEN_BLACK,  -1, 0, 3, 9), make_tuple(ICON_QUEEN_WHITE,  1, 7, 3, 9),
+                make_tuple(ICON_KING_BLACK,   -1, 0, 4, 9), make_tuple(ICON_KING_WHITE,   1, 7, 4, 9),
+            }){
+
+                for(int x=x_start; x<8; x+=x_step){
+
+                    Piece * piece = new Piece{
+                        .icon = icon,
+                        .forward_y = forward_y,
+                    };
+
+                    place_piece(y, x, piece);
+                }
+
             }
-
-            if(tiles[idx]->piece){
-                ERR("there is already a piece at y=" << y << " x=" << x);
-            }
-
-            tiles[idx]->piece = piece;
 
         }
 
@@ -308,6 +318,21 @@ class Board{
 
         }
 
+        void place_piece(int y, int x, Piece * piece){
+
+            auto [fail_ci, idx] = calc_idx(y, x);
+            if(fail_ci){
+                ERR("invalid position y=" << y << " x=" << x);
+            }
+
+            if(tiles[idx]->piece){
+                ERR("there is already a piece at y=" << y << " x=" << x);
+            }
+
+            tiles[idx]->piece = piece;
+
+        }
+
 };
 
 ///
@@ -322,34 +347,7 @@ int main(){
 
     board->connect_neighbours();
 
-    // place pieces
-
-    {
-
-        // pawn
-
-        for(auto [icon, forward_y, y, x_start, x_step] : {
-            make_tuple(ICON_PAWN_BLACK,   -1, 1, 0, 1), make_tuple(ICON_PAWN_WHITE,   1, 6, 0, 1),
-            make_tuple(ICON_ROOK_BLACK,   -1, 0, 0, 7), make_tuple(ICON_ROOK_WHITE,   1, 7, 0, 7),
-            make_tuple(ICON_KNIGHT_BLACK, -1, 0, 1, 5), make_tuple(ICON_KNIGHT_WHITE, 1, 7, 1, 5),
-            make_tuple(ICON_BISHOP_BLACK, -1, 0, 2, 3), make_tuple(ICON_BISHOP_WHITE, 1, 7, 2, 3),
-            make_tuple(ICON_QUEEN_BLACK,  -1, 0, 3, 9), make_tuple(ICON_QUEEN_WHITE,  1, 7, 3, 9),
-            make_tuple(ICON_KING_BLACK,   -1, 0, 4, 9), make_tuple(ICON_KING_WHITE,   1, 7, 4, 9),
-        }){
-
-            for(int x=x_start; x<8; x+=x_step){
-
-                Piece * piece = new Piece{
-                    .icon = icon,
-                    .forward_y = forward_y,
-                };
-
-                board->place_piece(y, x, piece);
-            }
-
-        }
-
-    }
+    board->place_pieces();
 
     // draw board
 
