@@ -346,6 +346,8 @@ class Piece{
 
             vector<Tile *> moves = {};
 
+            // TODO in the 4way chess map this won't be sufficient
+
             if(location->neighbour_up){
 
                 if(location->neighbour_up->neighbour_upleft){
