@@ -139,6 +139,117 @@ class Board{
 
         vector<Tile *> tiles = {};
 
+        Board(){
+
+            if(this->tiles.size() != 0){
+                ERR("already initialised");
+            }
+
+            for(int y=0; y<8; ++y){
+                for(int x=0; x<8; ++x){
+
+                    Tile * tile = new Tile{
+                        .y = y,
+                        .x = x,
+                    };
+
+                    this->tiles.push_back(tile);
+
+                }
+            }
+
+        }
+
+        ~Board(){
+
+            for(Tile * tile : this->tiles){
+
+                delete tile;
+
+            }
+
+        }
+
+        void connect_neighbours(){
+
+            for(Tile * tile : this->tiles){
+
+                { // up
+                    int nei_up_y = tile->y - 1;
+                    int nei_up_x = tile->x;
+                    Tile * nei = this->get_tile_at(nei_up_y, nei_up_x);
+                    if(nei){
+                        tile->neighbour_up = nei;
+                    }
+                }
+
+                { // down
+                    int nei_up_y = tile->y + 1;
+                    int nei_up_x = tile->x;
+                    Tile * nei = this->get_tile_at(nei_up_y, nei_up_x);
+                    if(nei){
+                        tile->neighbour_down = nei;
+                    }
+                }
+
+                { // left
+                    int nei_up_y = tile->y;
+                    int nei_up_x = tile->x - 1;
+                    Tile * nei = this->get_tile_at(nei_up_y, nei_up_x);
+                    if(nei){
+                        tile->neighbour_left = nei;
+                    }
+                }
+
+                { // right
+                    int nei_up_y = tile->y;
+                    int nei_up_x = tile->x + 1;
+                    Tile * nei = this->get_tile_at(nei_up_y, nei_up_x);
+                    if(nei){
+                        tile->neighbour_right = nei;
+                    }
+                }
+
+                { // up left
+                    int nei_up_y = tile->y - 1;
+                    int nei_up_x = tile->x - 1;
+                    Tile * nei = this->get_tile_at(nei_up_y, nei_up_x);
+                    if(nei){
+                        tile->neighbour_upleft = nei;
+                    }
+                }
+
+                { // up right
+                    int nei_up_y = tile->y - 1;
+                    int nei_up_x = tile->x + 1;
+                    Tile * nei = this->get_tile_at(nei_up_y, nei_up_x);
+                    if(nei){
+                        tile->neighbour_upright = nei;
+                    }
+                }
+
+                { // down left
+                    int nei_up_y = tile->y + 1;
+                    int nei_up_x = tile->x - 1;
+                    Tile * nei = this->get_tile_at(nei_up_y, nei_up_x);
+                    if(nei){
+                        tile->neighbour_downleft = nei;
+                    }
+                }
+
+                { // down right
+                    int nei_up_y = tile->y + 1;
+                    int nei_up_x = tile->x + 1;
+                    Tile * nei = this->get_tile_at(nei_up_y, nei_up_x);
+                    if(nei){
+                        tile->neighbour_downright = nei;
+                    }
+                }
+
+            }
+
+        }
+
         Tile * get_tile_at(int y, int x){
 
             auto [fail_ci, idx] = this->calc_idx(y, x);
@@ -185,97 +296,8 @@ class Board{
 int main(){
 
     Board * board = new Board;
-
-    for(int y=0; y<8; ++y){
-        for(int x=0; x<8; ++x){
-
-            Tile * tile = new Tile{
-                .y = y,
-                .x = x,
-            };
-
-            board->tiles.push_back(tile);
-
-        }
-    }
-
-    // connect neighbours
     
-    for(Tile * tile : board->tiles){
-
-        { // up
-            int nei_up_y = tile->y - 1;
-            int nei_up_x = tile->x;
-            Tile * nei = board->get_tile_at(nei_up_y, nei_up_x);
-            if(nei){
-                tile->neighbour_up = nei;
-            }
-        }
-
-        { // down
-            int nei_up_y = tile->y + 1;
-            int nei_up_x = tile->x;
-            Tile * nei = board->get_tile_at(nei_up_y, nei_up_x);
-            if(nei){
-                tile->neighbour_down = nei;
-            }
-        }
-
-        { // left
-            int nei_up_y = tile->y;
-            int nei_up_x = tile->x - 1;
-            Tile * nei = board->get_tile_at(nei_up_y, nei_up_x);
-            if(nei){
-                tile->neighbour_left = nei;
-            }
-        }
-
-        { // right
-            int nei_up_y = tile->y;
-            int nei_up_x = tile->x + 1;
-            Tile * nei = board->get_tile_at(nei_up_y, nei_up_x);
-            if(nei){
-                tile->neighbour_right = nei;
-            }
-        }
-
-        { // up left
-            int nei_up_y = tile->y - 1;
-            int nei_up_x = tile->x - 1;
-            Tile * nei = board->get_tile_at(nei_up_y, nei_up_x);
-            if(nei){
-                tile->neighbour_upleft = nei;
-            }
-        }
-
-        { // up right
-            int nei_up_y = tile->y - 1;
-            int nei_up_x = tile->x + 1;
-            Tile * nei = board->get_tile_at(nei_up_y, nei_up_x);
-            if(nei){
-                tile->neighbour_upright = nei;
-            }
-        }
-
-        { // down left
-            int nei_up_y = tile->y + 1;
-            int nei_up_x = tile->x - 1;
-            Tile * nei = board->get_tile_at(nei_up_y, nei_up_x);
-            if(nei){
-                tile->neighbour_downleft = nei;
-            }
-        }
-
-        { // down right
-            int nei_up_y = tile->y + 1;
-            int nei_up_x = tile->x + 1;
-            Tile * nei = board->get_tile_at(nei_up_y, nei_up_x);
-            if(nei){
-                tile->neighbour_downright = nei;
-            }
-        }
-
-    }
+    board->connect_neighbours();
 
     // ...
 
@@ -293,8 +315,6 @@ int main(){
         cout << piece->icon;
     }
 
-    ERR("asdfg");
-
     // Piece * pawn_black_0 = new Piece{
     //     .icon = ICON_PAWN_BLACK,
     //     .forward_y = -1,
@@ -304,6 +324,8 @@ int main(){
 
     // DBG(pawn_black_0->icon);
     // DBG(pawn_black_0->forward_y);
+
+    delete board;
 
     return 0;
 }
