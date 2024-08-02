@@ -669,7 +669,6 @@ Tile * Tile::duplicate(){
 
     if(piece){
         copy->piece = piece->duplicate(copy);
-        copy->piece->location = copy;
     }
 
     return copy;
@@ -721,11 +720,10 @@ class Board{
             Board * copy = new Board;
 
             for(Tile * tile : tiles){
-                Tile * copy_tile = tile->duplicate();
-                copy->tiles.push_back(copy_tile);
+                copy->tiles.push_back(tile->duplicate());
             }
 
-            connect_neighbours();
+            copy->connect_neighbours();
 
             copy->player_turn = player_turn;
 
@@ -1070,6 +1068,10 @@ int main(){
         if(winner != WINNER_NO_WINNER_YET){
             break;
         }
+
+        // Board * board2 = board->duplicate();
+        // delete board;
+        // board = board2;
 
     }
 
