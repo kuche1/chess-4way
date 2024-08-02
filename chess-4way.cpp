@@ -44,6 +44,10 @@ using namespace std;
     exit(1); \
 }
 
+#define UNREACHABLE() { \
+    ERR("unreachable"); \
+}
+
 ///
 //////
 /////////// define: icon
@@ -128,6 +132,20 @@ void disp_cur_set(int y, int x){
     cout << x + 1;
     cout << "H";
 }
+
+
+///
+//////
+/////////// enum: winner
+//////
+///
+
+enum winner{
+    WINNER_NO_WINNER_YET,
+    WINNER_PLAYER_0,
+    WINNER_PLAYER_1,
+    WINNER_STALEMATE,
+};
 
 ///
 //////
@@ -228,7 +246,7 @@ class Piece{
 
         }
 
-        void move_to(Tile * tile){
+        enum winner move_to(Tile * tile){
 
             has_not_moved = false;
 
@@ -238,8 +256,13 @@ class Piece{
             if(tile->piece){
 
                 if(tile->piece->type == PT_KING){
-                    cout << "Looser: " << tile->piece->owner << endl;
-                    exit(0);
+                    if(tile->piece->owner == 0){
+                        return WINNER_PLAYER_1;
+                    }else if(tile->piece->owner == 1){
+                        return WINNER_PLAYER_0;
+                    }else{
+                        UNREACHABLE();
+                    }
                 }
 
                 tile->piece->location = nullptr;
@@ -249,6 +272,8 @@ class Piece{
             tile->piece = this;
 
             // TODO what if this is a pawn and it reached the last tile
+
+            return WINNER_NO_WINNER_YET;
 
         }
     
@@ -309,7 +334,7 @@ class Piece{
 
             }else{
 
-                ERR("unreachable");
+                UNREACHABLE();
 
             }
 
@@ -693,7 +718,7 @@ class Board{
 
         }
 
-        void next_turn(){
+        enum winner next_turn(){
 
             int player = player_turn;
             player_turn = !player_turn;
@@ -717,7 +742,12 @@ class Board{
                     continue;
                 }
 
-                piece->move_to(vec_get_random_element(valid_moves));
+                {
+                    enum winner winner = piece->move_to(vec_get_random_element(valid_moves));
+                    if(winner != WINNER_NO_WINNER_YET){
+                        return winner;
+                    }
+                }
 
                 moved_something = true;
 
@@ -726,9 +756,10 @@ class Board{
             }
 
             if(!moved_something){
-                cout << "Stalemate" << endl;
-                exit(0);
+                return WINNER_STALEMATE;
             }
+
+            return WINNER_NO_WINNER_YET;
 
         }
 
@@ -899,17 +930,37 @@ int main(){
 
     Board * board = new Board;
 
+    enum winner winner;
+
     while(true){
 
         board->draw();
 
         input_enter();
 
-        board->next_turn();
+        winner = board->next_turn();
+        if(winner != WINNER_NO_WINNER_YET){
+            break;
+        }
 
     }
 
     delete board;
+
+    switch(winner){
+        case WINNER_NO_WINNER_YET:
+            UNREACHABLE();
+            break;
+        case WINNER_PLAYER_0:
+            cout << "Winner: player 0 (white)" << endl;
+            break;
+        case WINNER_PLAYER_1:
+            cout << "Winner: player 1 (black)" << endl;
+            break;
+        case WINNER_STALEMATE:
+            cout << "Stalemate" << endl;
+            break;
+    }
 
     return 0;
 }
