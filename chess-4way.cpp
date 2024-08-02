@@ -204,10 +204,14 @@ class Piece{
         void move_to(Tile * tile){
 
             location->piece = nullptr;
-
-            assert(!tile->piece);
-            tile->piece = this;
             location = tile;
+
+            if(tile->piece){
+                tile->piece->location = nullptr;
+                delete tile->piece;
+            }
+
+            tile->piece = this;
 
             has_not_moved = false;
 
@@ -222,15 +226,13 @@ class Piece{
 
             if(forward_y == -1){
 
-                if(location->neighbour_up){
+                if(location->neighbour_up && (!location->neighbour_up->piece || location->neighbour_up->piece->owner != owner)){
 
                     moves.push_back(location->neighbour_up);
 
-                    if(has_not_moved && !location->neighbour_up->piece){
+                    if(has_not_moved && location->neighbour_up->neighbour_up && (!location->neighbour_up->neighbour_up->piece || location->neighbour_up->neighbour_up->piece->owner != owner)){
 
-                        if(location->neighbour_up->neighbour_up){
-                            moves.push_back(location->neighbour_up->neighbour_up);
-                        }
+                        moves.push_back(location->neighbour_up->neighbour_up);
 
                     }
 
@@ -238,9 +240,33 @@ class Piece{
 
                 // TODO en passant
 
+                // TODO promotion if end of board reached
+
+                // TODO take
+
+            }else if(forward_y == 1){
+
+                if(location->neighbour_down && (!location->neighbour_down->piece || location->neighbour_down->piece->owner != owner)){
+
+                    moves.push_back(location->neighbour_down);
+
+                    if(has_not_moved && location->neighbour_down->neighbour_down && (!location->neighbour_down->neighbour_down->piece || location->neighbour_down->neighbour_down->piece->owner != owner)){
+
+                        moves.push_back(location->neighbour_down->neighbour_down);
+
+                    }
+
+                }
+
+                // TODO en passant
+
+                // TODO promotion if end of board reached
+
+                // TODO take
+
             }else{
 
-                ERR("todo black");
+                ERR("unreachable");
 
             }
 
@@ -335,7 +361,7 @@ class Piece{
 
                     if(pos->piece){
                         if(pos->piece->owner != owner){
-                            moves.push_back(location->neighbour_right->neighbour_downright);
+                            moves.push_back(pos);
                         }
 
                         break;
@@ -354,7 +380,7 @@ class Piece{
 
                     if(pos->piece){
                         if(pos->piece->owner != owner){
-                            moves.push_back(location->neighbour_right->neighbour_downright);
+                            moves.push_back(pos);
                         }
 
                         break;
@@ -373,7 +399,7 @@ class Piece{
 
                     if(pos->piece){
                         if(pos->piece->owner != owner){
-                            moves.push_back(location->neighbour_right->neighbour_downright);
+                            moves.push_back(pos);
                         }
 
                         break;
@@ -392,7 +418,7 @@ class Piece{
 
                     if(pos->piece){
                         if(pos->piece->owner != owner){
-                            moves.push_back(location->neighbour_right->neighbour_downright);
+                            moves.push_back(pos);
                         }
 
                         break;
@@ -419,7 +445,7 @@ class Piece{
 
                     if(pos->piece){
                         if(pos->piece->owner != owner){
-                            moves.push_back(location->neighbour_right->neighbour_downright);
+                            moves.push_back(pos);
                         }
 
                         break;
@@ -438,7 +464,7 @@ class Piece{
 
                     if(pos->piece){
                         if(pos->piece->owner != owner){
-                            moves.push_back(location->neighbour_right->neighbour_downright);
+                            moves.push_back(pos);
                         }
 
                         break;
@@ -457,7 +483,7 @@ class Piece{
 
                     if(pos->piece){
                         if(pos->piece->owner != owner){
-                            moves.push_back(location->neighbour_right->neighbour_downright);
+                            moves.push_back(pos);
                         }
 
                         break;
@@ -476,7 +502,7 @@ class Piece{
 
                     if(pos->piece){
                         if(pos->piece->owner != owner){
-                            moves.push_back(location->neighbour_right->neighbour_downright);
+                            moves.push_back(pos);
                         }
 
                         break;
@@ -648,11 +674,8 @@ class Board{
                     continue;
                 }
 
-                // DBG(piece->icon);
-                // DBG("valid moves: " << valid_moves.size());
-                // input_enter();
-
                 piece->move_to(valid_moves.at(0));
+                // TODO what if this is the knight we're taking
 
                 moved_something = true;
 
