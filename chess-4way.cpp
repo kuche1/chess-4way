@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <vector>
+#include <cassert>
 
 ///
 //////
@@ -66,6 +67,25 @@ using namespace std;
 
 ///
 //////
+/////////// declaration
+//////
+///
+
+class Piece;
+
+///
+//////
+/////////// function: input
+//////
+///
+
+void input_enter(){
+    string trash;
+    getline(cin, trash);
+}
+
+///
+//////
 /////////// module: terminal escape code
 //////
 ///
@@ -84,38 +104,13 @@ void disp_cur_set(int y, int x){
 
 ///
 //////
-/////////// class: piece
-//////
-///
-
-class Piece{
-
-    public:
-
-        string icon;
-
-        int forward_y;
-        // int forward_x = 0; // this only makes sense in 4way chess
-
-};
-
-///
-//////
-/////////// class: tile
+/////////// module: tile
 //////
 ///
 
 class Tile{
 
     public:
-
-        ~Tile(){
-
-            if(piece){
-                delete piece;
-            }
-
-        }
 
         int y;
         int x;
@@ -137,7 +132,77 @@ class Tile{
 
 ///
 //////
-/////////// class: board
+/////////// module: piece
+//////
+///
+
+enum piece_type{
+    PT_PAWN,
+    PT_KNIGHT,
+    PT_BISHOP,
+    PT_ROOK,
+    PT_QUEEN,
+    PT_KING,
+};
+
+class Piece{
+
+    public:
+
+        string icon;
+
+        int forward_y;
+        // int forward_x = 0; // this only makes sense in 4way chess
+
+        int owner; // which player owns the piece
+
+        enum piece_type type;
+
+        Tile * location;
+
+        vector<Tile *> get_valid_moves(){
+
+            vector<Tile *> moves = {};
+
+            if(type == PT_PAWN){
+
+                if(forward_y == -1){
+
+                    if(location->neighbour_up){
+                        moves.push_back(location->neighbour_up);
+                    }
+
+                }else{
+
+                    ERR("todo black");
+
+                }
+
+            }else{
+
+                ERR("todo pieces");
+
+            }
+
+            return moves;
+
+        }
+
+        void move_to(Tile * tile){
+
+            location->piece = nullptr;
+
+            assert(!tile->piece);
+            tile->piece = this;
+            location = tile;
+
+        }
+
+};
+
+///
+//////
+/////////// module: board
 //////
 ///
 
@@ -146,6 +211,8 @@ class Board{
     public:
 
         vector<Tile *> tiles = {};
+
+        int player_turn = 0; // which player's turn is it
 
         Board(){
 
@@ -175,6 +242,11 @@ class Board{
         ~Board(){
 
             for(Tile * tile : tiles){
+
+                if(tile->piece){
+                    delete tile->piece;
+                    tile->piece = nullptr;
+                }
 
                 delete tile;
 
@@ -222,6 +294,48 @@ class Board{
 
         }
 
+        void next_turn(){
+
+            int player = player_turn;
+            player_turn = !player_turn;
+
+            bool moved_something = false;
+
+            for(Tile * tile : tiles){
+
+                Piece * piece = tile->piece;
+                if(!piece){
+                    continue;
+                }
+
+                if(piece->owner != player){
+                    continue;
+                }
+
+                vector<Tile *> valid_moves = piece->get_valid_moves();
+
+                if(valid_moves.size() <= 0){
+                    continue;
+                }
+
+                // DBG(piece->icon);
+                // DBG("valid moves: " << valid_moves.size());
+                // input_enter();
+
+                piece->move_to(valid_moves.at(0));
+
+                moved_something = true;
+
+                break;
+
+            }
+
+            if(!moved_something){
+                ERR("todo implement stalemates");
+            }
+
+        }
+
     private:
 
         pair<bool, ssize_t> calc_idx(int y, int x){
@@ -254,21 +368,6 @@ class Board{
             }
 
             tiles[idx] = tile;
-
-        }
-
-        void place_piece(int y, int x, Piece * piece){
-
-            auto [fail_ci, idx] = calc_idx(y, x);
-            if(fail_ci){
-                ERR("invalid position y=" << y << " x=" << x);
-            }
-
-            if(tiles[idx]->piece){
-                ERR("there is already a piece at y=" << y << " x=" << x);
-            }
-
-            tiles[idx]->piece = piece;
 
         }
 
@@ -354,23 +453,38 @@ class Board{
 
         void place_pieces(){
 
-            for(auto [icon, forward_y, y, x_start, x_step] : {
-                make_tuple(ICON_PAWN_BLACK,   -1, 1, 0, 1), make_tuple(ICON_PAWN_WHITE,   1, 6, 0, 1),
-                make_tuple(ICON_ROOK_BLACK,   -1, 0, 0, 7), make_tuple(ICON_ROOK_WHITE,   1, 7, 0, 7),
-                make_tuple(ICON_KNIGHT_BLACK, -1, 0, 1, 5), make_tuple(ICON_KNIGHT_WHITE, 1, 7, 1, 5),
-                make_tuple(ICON_BISHOP_BLACK, -1, 0, 2, 3), make_tuple(ICON_BISHOP_WHITE, 1, 7, 2, 3),
-                make_tuple(ICON_QUEEN_BLACK,  -1, 0, 3, 9), make_tuple(ICON_QUEEN_WHITE,  1, 7, 3, 9),
-                make_tuple(ICON_KING_BLACK,   -1, 0, 4, 9), make_tuple(ICON_KING_WHITE,   1, 7, 4, 9),
+            for(auto [icon, type, owner, forward_y, y, x_start, x_step] : {
+                make_tuple(ICON_PAWN_BLACK,   PT_PAWN,   1, 1, 1, 0, 1), make_tuple(ICON_PAWN_WHITE,   PT_PAWN,   0, -1, 6, 0, 1),
+                make_tuple(ICON_ROOK_BLACK,   PT_ROOK,   1, 1, 0, 0, 7), make_tuple(ICON_ROOK_WHITE,   PT_ROOK,   0, -1, 7, 0, 7),
+                make_tuple(ICON_KNIGHT_BLACK, PT_KNIGHT, 1, 1, 0, 1, 5), make_tuple(ICON_KNIGHT_WHITE, PT_KNIGHT, 0, -1, 7, 1, 5),
+                make_tuple(ICON_BISHOP_BLACK, PT_BISHOP, 1, 1, 0, 2, 3), make_tuple(ICON_BISHOP_WHITE, PT_BISHOP, 0, -1, 7, 2, 3),
+                make_tuple(ICON_QUEEN_BLACK,  PT_QUEEN,  1, 1, 0, 3, 9), make_tuple(ICON_QUEEN_WHITE,  PT_QUEEN,  0, -1, 7, 3, 9),
+                make_tuple(ICON_KING_BLACK,   PT_KNIGHT, 1, 1, 0, 4, 9), make_tuple(ICON_KING_WHITE,   PT_KNIGHT, 0, -1, 7, 4, 9),
             }){
 
                 for(int x=x_start; x<8; x+=x_step){
 
+                    auto [fail_ci, idx] = calc_idx(y, x);
+                    if(fail_ci){
+                        ERR("invalid position y=" << y << " x=" << x);
+                    }
+
+                    Tile * tile = tiles[idx];
+
+                    if(tile->piece){
+                        ERR("there is already a piece at y=" << y << " x=" << x);
+                    }
+
                     Piece * piece = new Piece{
                         .icon = icon,
                         .forward_y = forward_y,
+                        .owner = owner,
+                        .type = type,
+                        .location = tile,
                     };
 
-                    place_piece(y, x, piece);
+                    tile->piece = piece;
+
                 }
 
             }
@@ -389,7 +503,15 @@ int main(){
 
     Board * board = new Board;
 
-    board->draw();
+    while(true){
+
+        board->draw();
+
+        input_enter();
+
+        board->next_turn();
+
+    }
 
     delete board;
 
