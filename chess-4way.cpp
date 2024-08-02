@@ -250,6 +250,15 @@ class Board{
 
         }
 
+    private:
+
+        pair<bool, ssize_t> calc_idx(int y, int x){
+            if(y < 0 || y >= 8 || x < 0 || x >= 8){
+                return {true, 0};
+            }
+            return {false, y * 8 + x};
+        }
+
         Tile * get_tile_at(int y, int x){
 
             auto [fail_ci, idx] = this->calc_idx(y, x);
@@ -274,15 +283,6 @@ class Board{
 
             tiles[idx] = tile;
 
-        }
-    
-    private:
-
-        pair<bool, ssize_t> calc_idx(int y, int x){
-            if(y < 0 || y >= 8 || x < 0 || x >= 8){
-                return {true, 0};
-            }
-            return {false, y * 8 + x};
         }
 
 };
