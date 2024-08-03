@@ -499,7 +499,7 @@ pair<int, int> input_mouse_click() {
     mouse_y -= 1;
     mouse_x -= 1;
 
-    return make_tuple(mouse_y, mouse_x);
+    return {mouse_y, mouse_x};
 }
 
 ///
