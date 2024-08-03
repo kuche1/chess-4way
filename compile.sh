@@ -12,7 +12,12 @@ APP_NAME='chess-4way'
 
 FLAGS_STANDARD='-std=c++23'
 
-FLAGS_STRICT='-Werror -Wextra -Wall -pedantic -Wfatal-errors -Wshadow -Wconversion -fsanitize=undefined -fsanitize=address'
+FLAGS_COMPILETIME_SAFETY='-Werror -Wextra -Wall -pedantic -Wfatal-errors -Wshadow -Wconversion'
+# those do not affect the runtime performance
+
+FLAGS_RUNTIME_SAFETY=''
+# those do affect the runtime performance
+# example: -fsanitize=undefined
 # -fsanitize=undefined will detect undefined behaviour at runtime (example: signed overflow)
 
 FLAGS_OPTIMISATION='-Ofast -march=native'
@@ -25,7 +30,7 @@ FLAGS_MISC='-g'
 FLAGS_LIB=''
 # example: -lgmp
 
-FLAGS="$FLAGS_STANDARD $FLAGS_STRICT $FLAGS_OPTIMISATION $FLAGS_MISC $FLAGS_LIB"
+FLAGS="$FLAGS_STANDARD $FLAGS_COMPILETIME_SAFETY $FLAGS_RUNTIME_SAFETY $FLAGS_OPTIMISATION $FLAGS_MISC $FLAGS_LIB"
 
 # set define containing current git commit
 
