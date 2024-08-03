@@ -4,6 +4,8 @@
 // implementing stealmate by repeating turns
 //
 // rokada
+//
+// reduce the board representation
 
 ///
 //////
@@ -156,6 +158,8 @@ class Board{
 
         void load_calculated_moves(string file);
 
+        pair<int, int> terminal_position_to_board_position(pair<int, int> term_pos);
+
     private:
 
         pair<bool, ssize_t> calc_idx(int y, int x);
@@ -264,6 +268,51 @@ T vec_get_random_element(vector<T>& vec){
 
 ///
 //////
+/////////// function: terminal
+//////
+///
+
+void term(char * command) {
+    int ret_code = system(command);
+    if(ret_code != 0){
+        ERR("command failed: `" << command << "`");
+    }
+}
+
+// mouse click
+
+void terminal_mouse_click_log_enable() {
+    printf("\033[?9h"); // the line on the bottom doesnt work without this one
+    printf("\033[?1006h");
+}
+
+void terminal_mouse_click_log_disable() {
+    printf("\033[?1006l");
+    printf("\033[?9l");
+}
+
+// echo
+
+void terminal_echo_enable() {
+    term((char*)"stty echo");
+}
+
+void terminal_echo_disable() {
+    term((char*)"stty -echo");
+}
+
+// line buffering
+
+void terminal_line_buffering_enable() {
+    term((char*)"stty icanon");
+}
+
+void terminal_line_buffering_disable() {
+    term((char*)"stty -icanon");
+}
+
+///
+//////
 /////////// function: input
 //////
 ///
@@ -318,6 +367,125 @@ pair<int, int> input_chess_pos(string prompt){
 
     }
 
+}
+
+///
+//////
+/////////// function: input mouse
+//////
+///
+
+// some info on the input modes: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Extended-coordinates
+
+#define CSI {'\033', '['}
+#define CSI_LEN 2
+
+#define SGR_BEGIN '<'
+#define SGR_SEP ';'
+#define SGR_END 'M'
+
+tuple<int, int> input_mouse_click() {
+
+    terminal_line_buffering_disable();
+    terminal_echo_disable();
+    terminal_mouse_click_log_enable();
+
+    int mouse_y = 0;
+    int mouse_x = 0;
+
+    for(;;){
+
+        string line;
+        // printf("\n");
+        // cout << "byte#0: " << (int)line[0] << '\n';
+        // cout << "byte#1: " << (int)line[1] << '\n';
+        // cout << "byte#2: " << (int)line[2] << '\n';
+        // cout << "byte#3: " << (int)line[3] << '\n';
+        // cout << "byte#4: " << (int)line[4] << '\n';
+        // cout << "byte#5: " << (int)line[5] << '\n';
+        // cout << "byte#6: " << (int)line[6] << '\n';
+        // cout << "byte#7: " << (int)line[7] << '\n';
+
+        for(;;){
+            char ch = static_cast<char>(getchar());
+            
+            line += ch;
+
+            if(ch == SGR_END){
+
+                ssize_t csi_idx = line.rfind(CSI);
+
+                if(csi_idx < 0){
+                    continue;
+                }
+
+                line.erase(0, csi_idx + CSI_LEN);
+
+                break;
+            }
+        }
+
+        assert(line[0] == SGR_BEGIN);
+        line.erase(0, 1);
+
+        // this really should not be an assert since this can be 0=click 64=mwheelup 65=mwheeldown
+        assert(line[0] == '0');
+        line.erase(0, 1);
+        assert(line[0] == SGR_SEP);
+        line.erase(0, 1);
+
+        mouse_y = 0;
+        mouse_x = 0;
+
+        // parse mouse_x
+        for(;;){
+            char ch = line[0];
+            line.erase(0, 1);
+
+            if(ch == SGR_SEP){
+                break;
+            }
+
+            assert(ch >= '0');
+            assert(ch <= '9');
+
+            mouse_x *= 10;
+            mouse_x += ch - '0';
+        }
+
+        // parse mouse_y
+        for(;;){
+            char ch = line[0];
+            line.erase(0, 1);
+
+            if(ch == SGR_END){
+                break;
+            }
+
+            assert(ch >= '0');
+            assert(ch <= '9');
+
+            mouse_y *= 10;
+            mouse_y += ch - '0';
+        }
+
+        // ...
+
+        assert(line.length() == 0);
+
+        break;
+
+    }
+
+    terminal_mouse_click_log_disable();
+    terminal_echo_enable();
+    terminal_line_buffering_enable();
+
+    // correct the positions, from 1-indexed, to 0-indexed
+    mouse_y -= 1;
+    mouse_x -= 1;
+
+    return make_tuple(mouse_y, mouse_x);
 }
 
 ///
@@ -1405,6 +1573,8 @@ string Board::get_state(int arg_player_turn, int additional_depth){
 
 void Board::save_calculated_moves(string file){
 
+    (void)(file);
+
     string file_tmp = file + "-tmp";
 
     ofstream tmp;
@@ -1422,6 +1592,8 @@ void Board::save_calculated_moves(string file){
 
 void Board::load_calculated_moves(string file){
 
+    // (void)(file);
+
     ifstream f;
     f.open(file, ios::in | ios::binary);
     if(!f){
@@ -1432,6 +1604,32 @@ void Board::load_calculated_moves(string file){
     unique_lock lock(*already_calculated_moves_lock); // lock for writing
     file_read___unsortedmap___string___vector__pair__pair_int__pair_int(f, already_calculated_moves);
     lock.unlock();
+
+}
+
+pair<int, int> Board::terminal_position_to_board_position(pair<int, int> term_pos){
+
+    {
+        term_pos.first -= 1;
+
+        if(term_pos.first % 2 != 0){
+            return {-1, -1};
+        }
+
+        term_pos.first /= 2;
+    }
+
+    {
+        term_pos.second -= 2;
+
+        if(term_pos.second % 4 != 0){
+            return {-1, -1};
+        }
+
+        term_pos.second /= 4;
+    }
+
+    return term_pos;
 
 }
 
@@ -1615,9 +1813,9 @@ int main(){
 
     board->init();
 
-    cout << "Reading moves db..." << endl;
+    cout << "Loading moves db..." << endl;
     board->load_calculated_moves(SAVE_FILE);
-    cout << "Read" << endl;
+    cout << "Loaded" << endl;
 
     enum winner winner = WINNER_NO_WINNER_YET;
 
@@ -1648,12 +1846,34 @@ int main(){
                 cout << "Saved" << endl;
             }
 
-        }else if(command == "h"){
+        }else if(command == "h" || command == "c"){
 
             while(true){
 
-                pair<int, int> from = input_chess_pos("Move from: ");
-                pair<int, int> to = input_chess_pos("Move to: ");
+                pair<int, int> from = {};
+                pair<int, int> to = {};
+
+                if(command == "h"){
+
+                    from = input_chess_pos("Move from: ");
+                    to = input_chess_pos("Move to: ");
+
+                }else if(command == "c"){
+
+                    cout << "Click on piece to move\r";
+                    pair<int, int> from_unfiltered = input_mouse_click();
+                    cout << "Click on destination  \r";
+                    pair<int, int> to_unfiltered = input_mouse_click();
+                    cout << "                    \r";
+
+                    from = board->terminal_position_to_board_position(from_unfiltered);
+                    to = board->terminal_position_to_board_position(to_unfiltered);
+
+                }else{
+
+                    UNREACHABLE();
+
+                }
 
                 auto [tile_fail, tile] = board->get_tile_at(from);
                 if(tile_fail){
@@ -1694,6 +1914,12 @@ int main(){
                 break;
 
             }
+
+        }else if(command == "c"){
+
+            pair<int, int> click = input_mouse_click();
+            DBG("click: " << click.first << " " << click.second);
+            input_enter();
 
         }else if(command == "auto"){
 
