@@ -829,7 +829,7 @@ enum winner Board::next_turn(){
     int player = player_turn;
     player_turn = !player_turn;
 
-    vector<pair<Piece *, vector<pair<int, int>>>> all_valid_moves = {};
+    vector<pair<pair<int, int>, vector<pair<int, int>>>> all_valid_moves = {};
 
     for(Tile * tile : tiles){
 
@@ -848,7 +848,7 @@ enum winner Board::next_turn(){
             continue;
         }
 
-        all_valid_moves.push_back({piece, valid_moves});
+        all_valid_moves.push_back({piece->get_pos(), valid_moves});
 
     }
 
@@ -857,9 +857,9 @@ enum winner Board::next_turn(){
     }
 
     {
-        auto [piece, valid_moves] = vec_get_random_element(all_valid_moves);
+        auto [from, valid_tos] = vec_get_random_element(all_valid_moves);
 
-        enum winner winner = move_piece_to(piece->get_pos(), vec_get_random_element(valid_moves));
+        enum winner winner = move_piece_to(from, vec_get_random_element(valid_tos));
         if(winner != WINNER_NO_WINNER_YET){
             return winner;
         }
