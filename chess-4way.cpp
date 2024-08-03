@@ -1069,7 +1069,7 @@ enum winner Board::next_turn(int additional_depth){
                 int depth = additional_depth - 1;
                 if(depth >= 0){
                     imag_board->next_turn(depth);
-                    // ignoring the return value here
+                    // ignoring the return value
                 }
             }
 
