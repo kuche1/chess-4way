@@ -1132,7 +1132,7 @@ void Board::draw(){
 
     cout << endl;
 
-    cout << "Turn of player " << player_turn << endl;
+    cout << "Turn of player: " << player_turn << endl;
 
     cout << "Material for player 0: " << count_material(0) << endl;
 
