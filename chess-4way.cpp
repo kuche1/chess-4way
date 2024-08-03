@@ -142,7 +142,7 @@ class Board{
 
         enum winner move_piece_to(pair<int, int> from, pair<int, int> to);
 
-        string get_state();
+        string get_state(int arg_player_turn);
 
     private:
 
@@ -181,6 +181,8 @@ class Piece{
         pair<int, int> get_pos();
 
         void draw();
+
+        char get_representation(); // includes the type of the piece and the owner
 
     private:
 
@@ -475,6 +477,43 @@ void Piece::draw(){
     }
 
     cout << color << icon << COL_RESET;
+
+}
+
+char Piece::get_representation(){
+
+    char repr;
+
+    switch(type){
+        case PT_PAWN:
+            repr = 'a';
+            break;
+        case PT_KNIGHT:
+            repr = 'b';
+            break;
+        case PT_BISHOP:
+            repr = 'c';
+            break;
+        case PT_ROOK:
+            repr = 'd';
+            break;
+        case PT_QUEEN:
+            repr = 'e';
+            break;
+        case PT_KING:
+            repr = 'f';
+            break;
+    }
+
+    if(owner == 0){
+        // do nothing
+    }else if(owner == 1){
+        repr += 6;
+    }else{
+        UNREACHABLE();
+    }
+
+    return repr;
 
 }
 
@@ -1122,18 +1161,24 @@ enum winner Board::move_piece_to(pair<int, int> from, pair<int, int> to){
 
 }
 
-string Board::get_state(){
+string Board::get_state(int arg_player_turn){
 
-    // for(Tile * tile : tiles){
-    //     Piece * piece = tile->piece;
-    //     if(piece){
-    //         ...
-    //     }else{
-            
-    //     }
-    // }
+    string state = "";
 
-    return "IDKMAN";
+    char player_turn_as_char = '0' + static_cast<char>(arg_player_turn);
+
+    state += player_turn_as_char;
+
+    for(Tile * tile : tiles){
+        Piece * piece = tile->piece;
+        if(piece){
+            state += piece->get_representation();
+        }else{
+            state += " ";
+        }
+    }
+
+    return state;
 
 }
 
@@ -1318,7 +1363,7 @@ int main(){
 
         board->draw();
 
-        cout << "State: " << board->get_state() << endl;
+        cout << "State: " << board->get_state(board->player_turn) << endl;
 
         cout << endl;
 
