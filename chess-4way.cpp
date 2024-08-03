@@ -116,7 +116,7 @@ class Board{
 
         int count_material();
 
-        pair<bool, Tile *> get_tile_at(int y, int x);
+        pair<bool, Tile *> get_tile_at(pair<int, int> pos);
 
         enum winner move_piece_to(pair<int, int> from, pair<int, int> to);
 
@@ -320,7 +320,7 @@ vector<pair<int, int>> Piece::get_valid_moves(){
 
 enum winner Piece::move_to(Board * board, pair<int, int> pos){
 
-    auto [tile_fail, tile] = board->get_tile_at(pos.first, pos.second);
+    auto [tile_fail, tile] = board->get_tile_at(pos);
     assert(!tile_fail);
 
     has_not_moved = false;
@@ -917,9 +917,9 @@ int Board::count_material(){
     return count;
 }
 
-pair<bool, Tile *> Board::get_tile_at(int y, int x){
+pair<bool, Tile *> Board::get_tile_at(pair<int, int> pos){
 
-    auto [fail_ci, idx] = calc_idx(y, x);
+    auto [fail_ci, idx] = calc_idx(pos.first, pos.second);
     if(fail_ci){
         return {true, nullptr};
     }
@@ -930,7 +930,7 @@ pair<bool, Tile *> Board::get_tile_at(int y, int x){
 
 enum winner Board::move_piece_to(pair<int, int> from, pair<int, int> to){
 
-    auto [tile_from_fail, tile_from] = get_tile_at(from.first, from.second);
+    auto [tile_from_fail, tile_from] = get_tile_at(from);
     assert(!tile_from_fail);
 
     Piece * piece = tile_from->piece;
@@ -992,7 +992,7 @@ void Board::connect_neighbours(){
         { // up
             int nei_up_y = tile->y - 1;
             int nei_up_x = tile->x;
-            auto [nei_fail, nei] = get_tile_at(nei_up_y, nei_up_x);
+            auto [nei_fail, nei] = get_tile_at({nei_up_y, nei_up_x});
             if(!nei_fail){
                 tile->neighbour_up = nei;
             }
@@ -1001,7 +1001,7 @@ void Board::connect_neighbours(){
         { // down
             int nei_up_y = tile->y + 1;
             int nei_up_x = tile->x;
-            auto [nei_fail, nei] = get_tile_at(nei_up_y, nei_up_x);
+            auto [nei_fail, nei] = get_tile_at({nei_up_y, nei_up_x});
             if(!nei_fail){
                 tile->neighbour_down = nei;
             }
@@ -1010,7 +1010,7 @@ void Board::connect_neighbours(){
         { // left
             int nei_up_y = tile->y;
             int nei_up_x = tile->x - 1;
-            auto [nei_fail, nei] = get_tile_at(nei_up_y, nei_up_x);
+            auto [nei_fail, nei] = get_tile_at({nei_up_y, nei_up_x});
             if(!nei_fail){
                 tile->neighbour_left = nei;
             }
@@ -1019,7 +1019,7 @@ void Board::connect_neighbours(){
         { // right
             int nei_up_y = tile->y;
             int nei_up_x = tile->x + 1;
-            auto [nei_fail, nei] = get_tile_at(nei_up_y, nei_up_x);
+            auto [nei_fail, nei] = get_tile_at({nei_up_y, nei_up_x});
             if(!nei_fail){
                 tile->neighbour_right = nei;
             }
@@ -1028,7 +1028,7 @@ void Board::connect_neighbours(){
         { // up left
             int nei_up_y = tile->y - 1;
             int nei_up_x = tile->x - 1;
-            auto [nei_fail, nei] = get_tile_at(nei_up_y, nei_up_x);
+            auto [nei_fail, nei] = get_tile_at({nei_up_y, nei_up_x});
             if(!nei_fail){
                 tile->neighbour_upleft = nei;
             }
@@ -1037,7 +1037,7 @@ void Board::connect_neighbours(){
         { // up right
             int nei_up_y = tile->y - 1;
             int nei_up_x = tile->x + 1;
-            auto [nei_fail, nei] = get_tile_at(nei_up_y, nei_up_x);
+            auto [nei_fail, nei] = get_tile_at({nei_up_y, nei_up_x});
             if(!nei_fail){
                 tile->neighbour_upright = nei;
             }
@@ -1046,7 +1046,7 @@ void Board::connect_neighbours(){
         { // down left
             int nei_up_y = tile->y + 1;
             int nei_up_x = tile->x - 1;
-            auto [nei_fail, nei] = get_tile_at(nei_up_y, nei_up_x);
+            auto [nei_fail, nei] = get_tile_at({nei_up_y, nei_up_x});
             if(!nei_fail){
                 tile->neighbour_downleft = nei;
             }
@@ -1055,7 +1055,7 @@ void Board::connect_neighbours(){
         { // down right
             int nei_up_y = tile->y + 1;
             int nei_up_x = tile->x + 1;
-            auto [nei_fail, nei] = get_tile_at(nei_up_y, nei_up_x);
+            auto [nei_fail, nei] = get_tile_at({nei_up_y, nei_up_x});
             if(!nei_fail){
                 tile->neighbour_downright = nei;
             }
