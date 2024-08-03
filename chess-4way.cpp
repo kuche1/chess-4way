@@ -398,7 +398,7 @@ pair<int, int> input_chess_pos(string prompt){
 #define SGR_SEP ';'
 #define SGR_END 'M'
 
-tuple<int, int> input_mouse_click() {
+pair<int, int> input_mouse_click() {
 
     terminal_line_buffering_disable();
     terminal_echo_disable();
