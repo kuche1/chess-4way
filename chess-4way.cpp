@@ -18,6 +18,8 @@
 #include <climits>
 // #include <map>
 #include <unordered_map>
+#include <fstream>
+#include <filesystem>
 
 ///
 //////
@@ -145,6 +147,10 @@ class Board{
         enum winner move_piece_to(pair<int, int> from, pair<int, int> to);
 
         string get_state(int arg_player_turn, int additional_depth);
+
+        void save_calculated_moves(string file);
+
+        void load_calculated_moves(string file);
 
     private:
 
@@ -308,6 +314,120 @@ pair<int, int> input_chess_pos(string prompt){
 
     }
 
+}
+
+///
+//////
+/////////// function: file IO
+//////
+///
+
+// TODO almost all of these are endianness-specific
+
+// write
+
+void file_write_size(ofstream & f, size_t data){
+    f.write(reinterpret_cast<char *>(&data), sizeof(data));
+    assert(!f.fail());
+}
+
+void file_write_string(ofstream & f, const string & data){
+    size_t size = data.size();
+    file_write_size(f, size);
+
+    // DBG("writing string of size " << size);
+    // input_enter();
+
+    f.write(data.c_str(), size);
+    assert(!f.fail());
+}
+
+void file_write_pair_int(ofstream & f, pair<int, int> & data){
+    f.write(reinterpret_cast<char *>(&data.first), sizeof(int));
+    assert(!f.fail());
+    f.write(reinterpret_cast<char *>(&data.second), sizeof(int));
+    assert(!f.fail());
+}
+
+void file_write__vector__pair__pair_int__pair_int(ofstream & f, vector< pair< pair<int,int> , pair<int,int> > > & data){
+    file_write_size(f, data.size());
+
+    for(auto [pair0, pair1] : data){
+        file_write_pair_int(f, pair0);
+        assert(!f.fail());
+
+        file_write_pair_int(f, pair1);
+        assert(!f.fail());
+    }
+}
+
+void file_write___unsortedmap___string___vector__pair__pair_int__pair_int(ofstream & f, unordered_map< string , vector< pair< pair<int, int> , pair<int,int> > > > * data){
+
+    file_write_size(f, data->size());
+
+    for(auto it = data->begin(); it != data->end(); ++it){
+        file_write_string(f, it->first);
+        file_write__vector__pair__pair_int__pair_int(f, it->second);
+    }
+}
+
+// read
+
+void file_read_size(ifstream & f, size_t & data){
+    f.read(reinterpret_cast<char *>(&data), sizeof(data));
+    assert(f.gcount() == sizeof(data));
+}
+
+void file_read_string(ifstream & f, string & data){
+    size_t size = 0;
+    file_read_size(f, size);
+
+    char * data_cstr = new char[size+1];
+
+    f.read(data_cstr, size);
+    assert(f.gcount() == static_cast<ssize_t>(size));
+
+    data_cstr[size] = 0;
+
+    data = data_cstr;
+}
+
+void file_read_pair_int(ifstream & f, pair<int, int> & data){
+    f.read(reinterpret_cast<char *>(&data.first), sizeof(int));
+    assert(f.gcount() == sizeof(int));
+
+    f.read(reinterpret_cast<char *>(&data.second), sizeof(int));
+    assert(f.gcount() == sizeof(int));
+}
+
+void file_read__vector__pair__pair_int__pair_int(ifstream & f, vector< pair< pair<int,int> , pair<int,int> > > & data){
+    size_t size = 0;
+    file_read_size(f, size);
+
+    for(size_t i=0; i<size; ++i){
+        pair<int, int> pair0 = {};
+        pair<int, int> pair1 = {};
+
+        file_read_pair_int(f, pair0);
+        file_read_pair_int(f, pair1);
+
+        data.push_back({pair0, pair1});
+    }
+}
+
+void file_read___unsortedmap___string___vector__pair__pair_int__pair_int(ifstream & f, unordered_map< string , vector< pair< pair<int, int> , pair<int,int> > > > * data){
+    size_t size = 0;
+    file_read_size(f, size);
+
+    for(size_t i=0; i<size; ++i){
+        string key = {};
+        file_read_string(f, key);
+
+        vector< pair< pair<int, int> , pair<int,int> > > value = {};
+        file_read__vector__pair__pair_int__pair_int(f, value);
+
+        (*data)[key] = value;
+    }
 }
 
 ///
@@ -936,7 +1056,7 @@ Board::~Board(){
 
 void Board::init(){
 
-    already_calculated_moves = new unordered_map< string , vector< pair< pair<int, int> , pair<int,int> > > >;
+    already_calculated_moves = new unordered_map< string , vector< pair< pair<int, int> , pair<int,int> > > > ();
 
     spawn_tiles();
     connect_neighbours();
@@ -1215,6 +1335,34 @@ string Board::get_state(int arg_player_turn, int additional_depth){
 
 }
 
+void Board::save_calculated_moves(string file){
+
+    string file_tmp = file + "-tmp";
+
+    ofstream tmp;
+    tmp.open(file_tmp, ios::out | ios::binary);
+    assert(tmp);
+
+    file_write___unsortedmap___string___vector__pair__pair_int__pair_int(tmp, already_calculated_moves);
+
+    filesystem::rename(file_tmp, file.c_str());
+    // this CAN fail
+
+}
+
+void Board::load_calculated_moves(string file){
+
+    ifstream f;
+    f.open(file, ios::in | ios::binary);
+    if(!f){
+        cout << "Could not open file `" << file << "`, library will not be loaded" << endl;
+        return;
+    }
+
+    file_read___unsortedmap___string___vector__pair__pair_int__pair_int(f, already_calculated_moves);
+
+}
+
 // private
 
 pair<bool, ssize_t> Board::calc_idx(int y, int x){
@@ -1387,14 +1535,19 @@ void Board::place_pieces(){
 
 #define BOT_DIFFICULTY 3
 
-#define AUTOPILOT true
+#define SAVE_FILE "saved-moves.sex"
 
 int main(){
 
     Board * board = new Board;
     board->init();
+    DBG("reading...");
+    board->load_calculated_moves(SAVE_FILE);
+    DBG("read");
 
     enum winner winner = WINNER_NO_WINNER_YET;
+
+    bool autopiot = false;
 
     while(winner == WINNER_NO_WINNER_YET){
 
@@ -1402,16 +1555,22 @@ int main(){
 
         cout << endl;
 
-#if AUTOPILOT
-        string command = "b";
-#else
-        cout << "Enter command: ";
-        string command = input_string();
-#endif
+        string command;
+
+        if(autopiot){
+            command = "b";
+        }else{
+            cout << "Enter command: ";
+            command = input_string();
+        }
 
         if(command == "b"){
 
             winner = board->next_turn(BOT_DIFFICULTY);
+
+            DBG("saving...");
+            board->save_calculated_moves(SAVE_FILE);
+            DBG("saved");
 
         }else if(command == "h"){
 
@@ -1459,6 +1618,10 @@ int main(){
                 break;
 
             }
+
+        }else if(command == "auto"){
+
+            autopiot = true;
 
         }else{
 
