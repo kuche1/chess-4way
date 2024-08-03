@@ -9,6 +9,7 @@
 #include <vector>
 #include <cassert>
 #include <random>
+#include <climits>
 
 ///
 //////
@@ -114,7 +115,7 @@ class Board{
 
         enum winner next_turn();
 
-        int count_material();
+        int count_material(int for_player);
 
         pair<bool, Tile *> get_tile_at(pair<int, int> pos);
 
@@ -328,23 +329,28 @@ enum winner Piece::move_to(Board * board, pair<int, int> pos){
     location->piece = nullptr;
     location = tile;
 
-    if(tile->piece){
+    Piece * piece = tile->piece;
+    tile->piece = this;
 
-        if(tile->piece->type == PT_KING){
-            if(tile->piece->owner == 0){
+    if(piece){
+
+        enum piece_type piece_type = piece->type;
+        int piece_owner = piece->owner;
+
+        piece->location = nullptr;
+        delete piece;
+
+        if(piece_type == PT_KING){
+            if(piece_owner == 0){
                 return WINNER_PLAYER_1;
-            }else if(tile->piece->owner == 1){
+            }else if(piece_owner == 1){
                 return WINNER_PLAYER_0;
             }else{
                 UNREACHABLE();
             }
         }
 
-        tile->piece->location = nullptr;
-        delete tile->piece;
     }
-
-    tile->piece = this;
 
     // TODO what if this is a pawn and it reached the last tile
 
@@ -820,7 +826,7 @@ void Board::draw(){
 
     cout << endl;
 
-    cout << "Material: " << count_material() << endl;
+    cout << "Material for player 0 (white): " << count_material(0) << endl;
 
 }
 
@@ -829,7 +835,7 @@ enum winner Board::next_turn(){
     int player = player_turn;
     player_turn = !player_turn;
 
-    vector<pair<pair<int, int>, vector<pair<int, int>>>> all_valid_moves = {};
+    vector< pair< pair<int, int> , pair<int, int> > > all_valid_moves = {};
 
     for(Tile * tile : tiles){
 
@@ -848,7 +854,11 @@ enum winner Board::next_turn(){
             continue;
         }
 
-        all_valid_moves.push_back({piece->get_pos(), valid_moves});
+        pair<int, int> piece_pos = piece->get_pos();
+
+        for(pair<int, int> move : valid_moves){
+            all_valid_moves.push_back({piece_pos, move});
+        }
 
     }
 
@@ -856,10 +866,50 @@ enum winner Board::next_turn(){
         return WINNER_STALEMATE;
     }
 
-    {
-        auto [from, valid_tos] = vec_get_random_element(all_valid_moves);
+    vector< tuple< int , pair<int,int> , pair<int,int> > > move_evaluations;
 
-        enum winner winner = move_piece_to(from, vec_get_random_element(valid_tos));
+    for(auto [from, to] : all_valid_moves){
+
+        Board * imag_board = duplicate();
+
+        imag_board->move_piece_to(from, to);
+        // enum winner winner = 
+        // TODO prefer given actions based on the outcome
+
+        int material = imag_board->count_material(player);
+
+        move_evaluations.push_back({material, from, to});
+
+        delete imag_board;
+
+    }
+
+    {
+        int best_move_material = INT_MIN;
+        vector< pair< pair<int, int> , pair<int, int> > > best_moves = {};
+
+        for(auto [material, from, to] : move_evaluations){
+
+            if(material > best_move_material){
+
+                best_move_material = material;
+
+                best_moves = {};
+                best_moves.push_back({from, to});
+                
+            }else if(material == best_move_material){
+
+                best_moves.push_back({from, to});
+
+            }
+
+        }
+
+        assert(best_move_material != INT_MIN);
+
+        auto [from, to] = vec_get_random_element(best_moves);
+
+        enum winner winner = move_piece_to(from, to);
         if(winner != WINNER_NO_WINNER_YET){
             return winner;
         }
@@ -869,7 +919,7 @@ enum winner Board::next_turn(){
 
 }
 
-int Board::count_material(){
+int Board::count_material(int for_player){
 
     int count = 0;
 
@@ -902,12 +952,8 @@ int Board::count_material(){
                 break;
         }
 
-        if(tile->piece->owner == 0){
+        if(tile->piece->owner != for_player){
             value *= -1;
-        }else if(tile->piece->owner == 1){
-            value *= 1;
-        }else{
-            UNREACHABLE();
         }
 
         count += value;
