@@ -124,7 +124,7 @@ class Board{
 
         int player_turn = 0; // which player's turn is it
 
-        unordered_map< string , pair< pair<int, int> , pair<int,int> > > * already_calculated_moves = {};
+        unordered_map< string , vector< pair< pair<int, int> , pair<int,int> > > > * already_calculated_moves = {};
 
         // Board();
 
@@ -936,7 +936,7 @@ Board::~Board(){
 
 void Board::init(){
 
-    already_calculated_moves = new unordered_map< string , pair< pair<int, int> , pair<int,int> > >;
+    already_calculated_moves = new unordered_map< string , vector< pair< pair<int, int> , pair<int,int> > > >;
 
     spawn_tiles();
     connect_neighbours();
@@ -1001,6 +1001,8 @@ void Board::draw(){
 
     cout << endl;
 
+    cout << "Turn of player " << player_turn << endl;
+
     cout << "Material for player 0: " << count_material(0) << endl;
 
 }
@@ -1010,8 +1012,7 @@ enum winner Board::next_turn(int additional_depth){
     int player = player_turn;
     player_turn = !player_turn;
 
-    pair<int, int> move_from = {-1, -1};
-    pair<int, int> move_to = {-1, -1};
+    vector< pair< pair<int, int> , pair<int, int> > > best_moves = {};
 
     // see if this position has already been calculated before
 
@@ -1022,7 +1023,7 @@ enum winner Board::next_turn(int additional_depth){
     if(it != already_calculated_moves->end()){
         // found
 
-        tie(move_from, move_to) = it->second;
+        best_moves = it->second;
 
     }else{
 
@@ -1083,7 +1084,6 @@ enum winner Board::next_turn(int additional_depth){
 
         {
             int best_move_material = INT_MIN;
-            vector< pair< pair<int, int> , pair<int, int> > > best_moves = {};
 
             for(auto [material, from, to] : move_evaluations){
 
@@ -1104,20 +1104,17 @@ enum winner Board::next_turn(int additional_depth){
 
             assert(best_move_material != INT_MIN);
 
-            tie(move_from, move_to) = vec_get_random_element(best_moves);
-
-            (*already_calculated_moves)[current_state] = {move_from, move_to};
+            (*already_calculated_moves)[current_state] = best_moves;
 
         }
 
     }
 
-    assert(move_from.first != -1);
-    assert(move_from.second != -1);
-    assert(move_to.first != -1);
-    assert(move_to.second != -1);
+    assert(best_moves.size() > 0);
 
-    enum winner winner = move_piece_to(move_from, move_to);
+    auto [from, to] = vec_get_random_element(best_moves);
+
+    enum winner winner = move_piece_to(from, to);
     if(winner != WINNER_NO_WINNER_YET){
         return winner;
     }
@@ -1390,6 +1387,8 @@ void Board::place_pieces(){
 
 #define BOT_DIFFICULTY 3
 
+#define AUTOPILOT true
+
 int main(){
 
     Board * board = new Board;
@@ -1403,8 +1402,12 @@ int main(){
 
         cout << endl;
 
+#if AUTOPILOT
+        string command = "b";
+#else
         cout << "Enter command: ";
         string command = input_string();
+#endif
 
         if(command == "b"){
 
