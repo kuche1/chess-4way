@@ -1,4 +1,8 @@
 
+// TODO
+//
+// implementing stealmate by repeating turns
+
 ///
 //////
 /////////// include
@@ -113,7 +117,7 @@ class Board{
 
         void draw();
 
-        enum winner next_turn();
+        enum winner next_turn(int additional_depth);
 
         int count_material(int for_player);
 
@@ -830,7 +834,7 @@ void Board::draw(){
 
 }
 
-enum winner Board::next_turn(){
+enum winner Board::next_turn(int additional_depth){
 
     int player = player_turn;
     player_turn = !player_turn;
@@ -872,9 +876,15 @@ enum winner Board::next_turn(){
 
         Board * imag_board = duplicate();
 
-        imag_board->move_piece_to(from, to);
-        // enum winner winner = 
-        // TODO prefer given actions based on the outcome
+        enum winner imag_winner = imag_board->move_piece_to(from, to);
+
+        if(imag_winner == WINNER_NO_WINNER_YET){
+            int depth = additional_depth - 1;
+            if(depth >= 0){
+                imag_board->next_turn(depth);
+                // ignoring the return value here
+            }
+        }
 
         int material = imag_board->count_material(player);
 
@@ -1170,14 +1180,11 @@ int main(){
 
         input_enter();
 
-        winner = board->next_turn();
+        winner = board->next_turn(2);
         if(winner != WINNER_NO_WINNER_YET){
+            board->draw();
             break;
         }
-
-        // Board * board2 = board->duplicate();
-        // delete board;
-        // board = board2;
 
     }
 

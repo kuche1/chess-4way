@@ -12,13 +12,13 @@ APP_NAME='chess-4way'
 
 FLAGS_STANDARD='-std=c++23'
 
-FLAGS_STRICT='-Werror -Wextra -Wall -pedantic -Wfatal-errors -Wshadow -Wconversion -fsanitize=undefined'
+FLAGS_STRICT='-Werror -Wextra -Wall -pedantic -Wfatal-errors -Wshadow -Wconversion -fsanitize=undefined -fsanitize=address'
 # -fsanitize=undefined will detect undefined behaviour at runtime (example: signed overflow)
 
 FLAGS_OPTIMISATION=''
 # example: -Ofast -march=native
 
-FLAGS_MISC=''
+FLAGS_MISC='-g'
 # example: -static
 # note: can't have both -static and -fsanitize=undefined
 
