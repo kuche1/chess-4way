@@ -2,6 +2,8 @@
 // TODO
 //
 // implementing stealmate by repeating turns
+//
+// rokada
 
 ///
 //////
@@ -235,9 +237,19 @@ T vec_get_random_element(vector<T>& vec){
 //////
 ///
 
+string input_string(){
+    string data;
+    getline(cin, data);
+    return data;
+}
+
 void input_enter(){
-    string trash;
-    getline(cin, trash);
+    input_string();
+}
+
+int input_int(){
+    string data = input_string();
+    return stoi(data); // this CAN crash
 }
 
 ///
@@ -1172,18 +1184,42 @@ int main(){
     Board * board = new Board;
     board->init();
 
-    enum winner winner;
+    enum winner winner = WINNER_NO_WINNER_YET;
 
-    while(true){
+    while(winner == WINNER_NO_WINNER_YET){
 
         board->draw();
+        cout << endl;
 
-        input_enter();
+        cout << "Enter command: ";
+        string command = input_string();
 
-        winner = board->next_turn(2);
-        if(winner != WINNER_NO_WINNER_YET){
-            board->draw();
-            break;
+        if(command == "b"){
+
+            winner = board->next_turn(3);
+
+        }else if(command == "h"){
+
+            cout << "From y: ";
+            int f0 = input_int();
+            cout << "From x: ";
+            int f1 = input_int();
+            cout << "To y: ";
+            int t0 = input_int();
+            cout << "To x: ";
+            int t1 = input_int();
+
+            pair<int, int> from = {f0, f1};
+            pair<int, int> to = {t0, t1};
+
+            board->move_piece_to(from, to);
+            board->player_turn = !board->player_turn;
+
+        }else{
+
+            cout << "Invalid command: `" << command << "`" << endl;
+            input_enter();
+
         }
 
     }
