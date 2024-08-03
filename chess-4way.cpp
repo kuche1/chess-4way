@@ -171,6 +171,8 @@ class Piece{
 
         pair<int, int> get_pos();
 
+        void draw();
+
     private:
 
         vector<pair<int, int>> gen_valid_moves_pawn();
@@ -420,6 +422,12 @@ enum winner Piece::move_to(Board * board, pair<int, int> pos){
 pair<int, int> Piece::get_pos(){
 
     return location->get_pos();
+
+}
+
+void Piece::draw(){
+
+    cout << icon;
 
 }
 
@@ -894,7 +902,7 @@ void Board::draw(){
 
         disp_cur_set(draw_y, draw_x);
         
-        cout << piece->icon;
+        piece->draw();
     }
 
     cout << endl;
