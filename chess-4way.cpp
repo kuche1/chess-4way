@@ -118,6 +118,8 @@ class Board{
 
         pair<bool, Tile *> get_tile_at(int y, int x);
 
+        enum winner move_piece_to(pair<int, int> from, pair<int, int> to);
+
     private:
 
         pair<bool, ssize_t> calc_idx(int y, int x);
@@ -153,6 +155,8 @@ class Piece{
         vector<pair<int, int>> get_valid_moves();
 
         enum winner move_to(Board * board, pair<int, int> pos);
+
+        pair<int, int> get_pos();
 
     private:
 
@@ -317,9 +321,7 @@ vector<pair<int, int>> Piece::get_valid_moves(){
 enum winner Piece::move_to(Board * board, pair<int, int> pos){
 
     auto [tile_fail, tile] = board->get_tile_at(pos.first, pos.second);
-    if(tile_fail){
-        UNREACHABLE();
-    }
+    assert(!tile_fail);
 
     has_not_moved = false;
 
@@ -347,6 +349,12 @@ enum winner Piece::move_to(Board * board, pair<int, int> pos){
     // TODO what if this is a pawn and it reached the last tile
 
     return WINNER_NO_WINNER_YET;
+
+}
+
+pair<int, int> Piece::get_pos(){
+
+    return location->get_pos();
 
 }
 
@@ -851,7 +859,7 @@ enum winner Board::next_turn(){
     {
         auto [piece, valid_moves] = vec_get_random_element(all_valid_moves);
 
-        enum winner winner = piece->move_to(this, vec_get_random_element(valid_moves));
+        enum winner winner = move_piece_to(piece->get_pos(), vec_get_random_element(valid_moves));
         if(winner != WINNER_NO_WINNER_YET){
             return winner;
         }
@@ -917,6 +925,18 @@ pair<bool, Tile *> Board::get_tile_at(int y, int x){
     }
 
     return {false, tiles[idx]};
+
+}
+
+enum winner Board::move_piece_to(pair<int, int> from, pair<int, int> to){
+
+    auto [tile_from_fail, tile_from] = get_tile_at(from.first, from.second);
+    assert(!tile_from_fail);
+
+    Piece * piece = tile_from->piece;
+    assert(piece);
+
+    return piece->move_to(this, to);
 
 }
 
