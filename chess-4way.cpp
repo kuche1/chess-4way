@@ -4,6 +4,8 @@
 // implementing stealmate by repeating turns
 //
 // rokada
+//
+// !!! add color codes !!!
 
 ///
 //////
@@ -126,6 +128,8 @@ class Board{
         pair<bool, Tile *> get_tile_at(pair<int, int> pos);
 
         enum winner move_piece_to(pair<int, int> from, pair<int, int> to);
+
+        string get_state();
 
     private:
 
@@ -527,9 +531,9 @@ vector<pair<int, int>> Piece::gen_valid_moves_knight(){
             }
         }
 
-        if(location->neighbour_left->neighbour_downright){
-            if(!location->neighbour_left->neighbour_downright->piece || (location->neighbour_left->neighbour_downright->piece->owner != owner)){
-                moves.push_back(location->neighbour_left->neighbour_downright->get_pos());
+        if(location->neighbour_left->neighbour_downleft){
+            if(!location->neighbour_left->neighbour_downleft->piece || (location->neighbour_left->neighbour_downleft->piece->owner != owner)){
+                moves.push_back(location->neighbour_left->neighbour_downleft->get_pos());
             }
         }
 
@@ -574,6 +578,8 @@ vector<pair<int, int>> Piece::gen_valid_moves_bishop(){
                 }
 
                 break;
+            }else{
+                moves.push_back(pos->get_pos());
             }
         }
     }
@@ -593,6 +599,8 @@ vector<pair<int, int>> Piece::gen_valid_moves_bishop(){
                 }
 
                 break;
+            }else{
+                moves.push_back(pos->get_pos());
             }
         }
     }
@@ -612,6 +620,8 @@ vector<pair<int, int>> Piece::gen_valid_moves_bishop(){
                 }
 
                 break;
+            }else{
+                moves.push_back(pos->get_pos());
             }
         }
     }
@@ -631,6 +641,8 @@ vector<pair<int, int>> Piece::gen_valid_moves_bishop(){
                 }
 
                 break;
+            }else{
+                moves.push_back(pos->get_pos());
             }
         }
     }
@@ -658,6 +670,8 @@ vector<pair<int, int>> Piece::gen_valid_moves_rook(){
                 }
 
                 break;
+            }else{
+                moves.push_back(pos->get_pos());
             }
         }
     }
@@ -677,6 +691,8 @@ vector<pair<int, int>> Piece::gen_valid_moves_rook(){
                 }
 
                 break;
+            }else{
+                moves.push_back(pos->get_pos());
             }
         }
     }
@@ -696,6 +712,8 @@ vector<pair<int, int>> Piece::gen_valid_moves_rook(){
                 }
 
                 break;
+            }else{
+                moves.push_back(pos->get_pos());
             }
         }
     }
@@ -715,6 +733,8 @@ vector<pair<int, int>> Piece::gen_valid_moves_rook(){
                 }
 
                 break;
+            }else{
+                moves.push_back(pos->get_pos());
             }
         }
     }
@@ -1045,6 +1065,21 @@ enum winner Board::move_piece_to(pair<int, int> from, pair<int, int> to){
 
 }
 
+string Board::get_state(){
+
+    // for(Tile * tile : tiles){
+    //     Piece * piece = tile->piece;
+    //     if(piece){
+    //         ...
+    //     }else{
+            
+    //     }
+    // }
+
+    return "IDKMAN";
+
+}
+
 // private
 
 pair<bool, ssize_t> Board::calc_idx(int y, int x){
@@ -1226,6 +1261,9 @@ int main(){
     while(winner == WINNER_NO_WINNER_YET){
 
         board->draw();
+
+        cout << "State: " << board->get_state() << endl;
+
         cout << endl;
 
         cout << "Enter command: ";
@@ -1233,7 +1271,7 @@ int main(){
 
         if(command == "b"){
 
-            winner = board->next_turn(3);
+            winner = board->next_turn(2);
 
         }else if(command == "h"){
 
@@ -1275,7 +1313,7 @@ int main(){
                     continue;
                 }
 
-                board->move_piece_to(from, to);
+                winner = board->move_piece_to(from, to);
                 board->player_turn = !board->player_turn;
 
                 break;
