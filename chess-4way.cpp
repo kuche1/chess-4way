@@ -21,6 +21,7 @@
 #include <fstream>
 #include <filesystem>
 #include <mutex>
+#include <thread>
 
 ///
 //////
@@ -1192,6 +1193,52 @@ enum winner Board::next_turn(int additional_depth){
             return WINNER_STALEMATE;
         }
 
+#if false
+
+        vector< tuple< int , pair<int,int> , pair<int,int> > > move_evaluations (all_valid_moves.size());
+
+        vector<thread> threads = {};
+
+        ssize_t idx = -1;
+
+        for(auto [from, to] : all_valid_moves){
+            idx += 1;
+
+            Board * imag_board = duplicate();
+
+            thread thr(
+                [imag_board, additional_depth, idx, from, to, player, &move_evaluations](){
+
+                    enum winner imag_winner = imag_board->move_piece_to(from, to);
+
+                    if(imag_winner == WINNER_NO_WINNER_YET){
+                        int depth = additional_depth - 1;
+                        if(depth >= 0){
+                            imag_board->next_turn(depth);
+                            // ignoring the return value
+                        }
+                    }
+
+                    int material = imag_board->count_material(player);
+
+                    move_evaluations.at(idx) = {material, from, to};
+
+                    delete imag_board;
+
+                }
+            );
+
+            threads.push_back(move(thr));
+            // move the object here instead of copying because threads are not copy-able
+
+        }
+
+        for(auto & thr : threads){
+            thr.join();
+        }
+
+#else
+
         vector< tuple< int , pair<int,int> , pair<int,int> > > move_evaluations = {};
 
         for(auto [from, to] : all_valid_moves){
@@ -1215,6 +1262,8 @@ enum winner Board::next_turn(int additional_depth){
             delete imag_board;
 
         }
+
+#endif
 
         {
             int best_move_material = INT_MIN;
