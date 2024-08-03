@@ -116,7 +116,7 @@ class Board{
 
         int count_material();
 
-        Tile * get_tile_at(int y, int x);
+        pair<bool, Tile *> get_tile_at(int y, int x);
 
     private:
 
@@ -316,8 +316,8 @@ vector<pair<int, int>> Piece::get_valid_moves(){
 
 enum winner Piece::move_to(Board * board, pair<int, int> pos){
 
-    Tile * tile = board->get_tile_at(pos.first, pos.second);
-    if(!tile){
+    auto [tile_fail, tile] = board->get_tile_at(pos.first, pos.second);
+    if(tile_fail){
         UNREACHABLE();
     }
 
@@ -909,14 +909,14 @@ int Board::count_material(){
     return count;
 }
 
-Tile * Board::get_tile_at(int y, int x){
+pair<bool, Tile *> Board::get_tile_at(int y, int x){
 
     auto [fail_ci, idx] = calc_idx(y, x);
     if(fail_ci){
-        return nullptr;
+        return {true, nullptr};
     }
 
-    return tiles[idx];
+    return {false, tiles[idx]};
 
 }
 
@@ -972,8 +972,8 @@ void Board::connect_neighbours(){
         { // up
             int nei_up_y = tile->y - 1;
             int nei_up_x = tile->x;
-            Tile * nei = get_tile_at(nei_up_y, nei_up_x);
-            if(nei){
+            auto [nei_fail, nei] = get_tile_at(nei_up_y, nei_up_x);
+            if(!nei_fail){
                 tile->neighbour_up = nei;
             }
         }
@@ -981,8 +981,8 @@ void Board::connect_neighbours(){
         { // down
             int nei_up_y = tile->y + 1;
             int nei_up_x = tile->x;
-            Tile * nei = get_tile_at(nei_up_y, nei_up_x);
-            if(nei){
+            auto [nei_fail, nei] = get_tile_at(nei_up_y, nei_up_x);
+            if(!nei_fail){
                 tile->neighbour_down = nei;
             }
         }
@@ -990,8 +990,8 @@ void Board::connect_neighbours(){
         { // left
             int nei_up_y = tile->y;
             int nei_up_x = tile->x - 1;
-            Tile * nei = get_tile_at(nei_up_y, nei_up_x);
-            if(nei){
+            auto [nei_fail, nei] = get_tile_at(nei_up_y, nei_up_x);
+            if(!nei_fail){
                 tile->neighbour_left = nei;
             }
         }
@@ -999,8 +999,8 @@ void Board::connect_neighbours(){
         { // right
             int nei_up_y = tile->y;
             int nei_up_x = tile->x + 1;
-            Tile * nei = get_tile_at(nei_up_y, nei_up_x);
-            if(nei){
+            auto [nei_fail, nei] = get_tile_at(nei_up_y, nei_up_x);
+            if(!nei_fail){
                 tile->neighbour_right = nei;
             }
         }
@@ -1008,8 +1008,8 @@ void Board::connect_neighbours(){
         { // up left
             int nei_up_y = tile->y - 1;
             int nei_up_x = tile->x - 1;
-            Tile * nei = get_tile_at(nei_up_y, nei_up_x);
-            if(nei){
+            auto [nei_fail, nei] = get_tile_at(nei_up_y, nei_up_x);
+            if(!nei_fail){
                 tile->neighbour_upleft = nei;
             }
         }
@@ -1017,8 +1017,8 @@ void Board::connect_neighbours(){
         { // up right
             int nei_up_y = tile->y - 1;
             int nei_up_x = tile->x + 1;
-            Tile * nei = get_tile_at(nei_up_y, nei_up_x);
-            if(nei){
+            auto [nei_fail, nei] = get_tile_at(nei_up_y, nei_up_x);
+            if(!nei_fail){
                 tile->neighbour_upright = nei;
             }
         }
@@ -1026,8 +1026,8 @@ void Board::connect_neighbours(){
         { // down left
             int nei_up_y = tile->y + 1;
             int nei_up_x = tile->x - 1;
-            Tile * nei = get_tile_at(nei_up_y, nei_up_x);
-            if(nei){
+            auto [nei_fail, nei] = get_tile_at(nei_up_y, nei_up_x);
+            if(!nei_fail){
                 tile->neighbour_downleft = nei;
             }
         }
@@ -1035,8 +1035,8 @@ void Board::connect_neighbours(){
         { // down right
             int nei_up_y = tile->y + 1;
             int nei_up_x = tile->x + 1;
-            Tile * nei = get_tile_at(nei_up_y, nei_up_x);
-            if(nei){
+            auto [nei_fail, nei] = get_tile_at(nei_up_y, nei_up_x);
+            if(!nei_fail){
                 tile->neighbour_downright = nei;
             }
         }
