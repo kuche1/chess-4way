@@ -13,9 +13,11 @@
 //////
 ///
 
-#define BOT_DIFFICULTY 4
+#define BOT_BRUTE_FORCE_DEPTH 4
 // how many turns into the future is the bot going to attempt to look
 // 0 means only consider what you can take on your turn
+
+#define BOT_ADDITIONAL_DEPTH_IF_INTERESTING 1
 
 #define USE_SAVE_FILE true
 #define SAVE_FILE "saved-moves.sex"
@@ -1378,55 +1380,15 @@ enum winner Board::next_turn(int additional_depth){
 
         vector< tuple< int , pair<int,int> , pair<int,int> > > move_evaluations (all_valid_moves.size());
 
-        // TODO it super sucks that we have the same code in 2 places
-        if(additional_depth == BOT_DIFFICULTY){
+        vector<thread> threads = {};
 
-            vector<thread> threads = {};
+        ssize_t idx = -1;
+        for(auto [from, to] : all_valid_moves){
+            idx += 1;
 
-            ssize_t idx = -1;
-            for(auto [from, to] : all_valid_moves){
-                idx += 1;
+            Board * imag_board = duplicate();
 
-                Board * imag_board = duplicate();
-
-                thread thr(
-                    [imag_board, additional_depth, idx, from, to, player, &move_evaluations](){
-
-                        enum winner imag_winner = imag_board->move_piece_to(from, to);
-
-                        if(imag_winner == WINNER_NO_WINNER_YET){
-                            int depth = additional_depth - 1;
-                            if(depth >= 0){
-                                imag_board->next_turn(depth);
-                                // ignoring the return value
-                            }
-                        }
-
-                        int material = imag_board->count_material(player);
-
-                        move_evaluations.at(idx) = {material, from, to};
-
-                        delete imag_board;
-
-                    }
-                );
-
-                threads.push_back(move(thr));
-                // move the object here instead of copying because threads are not copy-able
-
-            }
-
-            for(auto & thr : threads){
-                thr.join();
-            }
-
-        }else{
-
-            ssize_t idx = -1;
-            for(auto [from, to] : all_valid_moves){
-                idx += 1;
-
-                Board * imag_board = duplicate();
+            auto fnc_imagine = [imag_board, additional_depth, idx, from, to, player, &move_evaluations]{
 
                 enum winner imag_winner = imag_board->move_piece_to(from, to);
 
@@ -1444,8 +1406,25 @@ enum winner Board::next_turn(int additional_depth){
 
                 delete imag_board;
 
+            };
+
+            if(additional_depth == BOT_BRUTE_FORCE_DEPTH){
+
+                thread thr(fnc_imagine);
+
+                threads.push_back(move(thr));
+                // move the object here instead of copying because threads are not copy-able
+
+            }else{
+
+                fnc_imagine();
+
             }
 
+        }
+
+        for(auto & thr : threads){
+            thr.join();
         }
 
         {
@@ -1880,7 +1859,7 @@ int main(){
 
         if(command == "b"){
 
-            winner = board->next_turn(BOT_DIFFICULTY);
+            winner = board->next_turn(BOT_BRUTE_FORCE_DEPTH);
 
             if(rand() <= SAVE_CHANCE){
                 cout << "Saving moves db..." << endl;
