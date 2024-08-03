@@ -1605,17 +1605,19 @@ void Board::place_pieces(){
 //////
 ///
 
-#define BOT_DIFFICULTY 3
+#define BOT_DIFFICULTY 4
 
 #define SAVE_FILE "saved-moves.sex"
 
 int main(){
 
     Board * board = new Board;
+
     board->init();
-    DBG("reading...");
+
+    cout << "Reading moves db..." << endl;
     board->load_calculated_moves(SAVE_FILE);
-    DBG("read");
+    cout << "Read" << endl;
 
     enum winner winner = WINNER_NO_WINNER_YET;
 
@@ -1640,9 +1642,11 @@ int main(){
 
             winner = board->next_turn(BOT_DIFFICULTY);
 
-            DBG("saving...");
-            board->save_calculated_moves(SAVE_FILE);
-            DBG("saved");
+            if(rand() <= 0.1){
+                cout << "Saving moves db..." << endl;
+                board->save_calculated_moves(SAVE_FILE);
+                cout << "Saved" << endl;
+            }
 
         }else if(command == "h"){
 
