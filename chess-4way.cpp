@@ -1259,6 +1259,22 @@ int main(){
                     continue;
                 }
 
+                bool move_is_valid = false;
+
+                vector<pair<int, int>> valid_moves = piece->get_valid_moves();
+
+                for(pair<int, int> valid_move : valid_moves){
+                    if((valid_move.first == to.first) && (valid_move.second == to.second)){
+                        move_is_valid = true;
+                        break;
+                    }
+                }
+
+                if(!move_is_valid){
+                    cout << "try again: not a valid move" << endl;
+                    continue;
+                }
+
                 board->move_piece_to(from, to);
                 board->player_turn = !board->player_turn;
 
