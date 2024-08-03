@@ -9,6 +9,20 @@
 
 ///
 //////
+/////////// settings
+//////
+///
+
+#define BOT_DIFFICULTY 4
+// how many turns into the future is the bot going to attempt to look
+// 0 means only consider what you can take on your turn
+
+#define USE_SAVE_FILE true
+#define SAVE_FILE "saved-moves.sex"
+#define SAVE_CHANCE 0.15
+
+///
+//////
 /////////// include
 //////
 ///
@@ -1362,77 +1376,77 @@ enum winner Board::next_turn(int additional_depth){
             return WINNER_STALEMATE;
         }
 
-#if false
-
         vector< tuple< int , pair<int,int> , pair<int,int> > > move_evaluations (all_valid_moves.size());
 
-        vector<thread> threads = {};
+        // TODO it super sucks that we have the same code in 2 places
+        if(additional_depth == BOT_DIFFICULTY){
 
-        ssize_t idx = -1;
+            vector<thread> threads = {};
 
-        for(auto [from, to] : all_valid_moves){
-            idx += 1;
+            ssize_t idx = -1;
+            for(auto [from, to] : all_valid_moves){
+                idx += 1;
 
-            Board * imag_board = duplicate();
+                Board * imag_board = duplicate();
 
-            thread thr(
-                [imag_board, additional_depth, idx, from, to, player, &move_evaluations](){
+                thread thr(
+                    [imag_board, additional_depth, idx, from, to, player, &move_evaluations](){
 
-                    enum winner imag_winner = imag_board->move_piece_to(from, to);
+                        enum winner imag_winner = imag_board->move_piece_to(from, to);
 
-                    if(imag_winner == WINNER_NO_WINNER_YET){
-                        int depth = additional_depth - 1;
-                        if(depth >= 0){
-                            imag_board->next_turn(depth);
-                            // ignoring the return value
+                        if(imag_winner == WINNER_NO_WINNER_YET){
+                            int depth = additional_depth - 1;
+                            if(depth >= 0){
+                                imag_board->next_turn(depth);
+                                // ignoring the return value
+                            }
                         }
+
+                        int material = imag_board->count_material(player);
+
+                        move_evaluations.at(idx) = {material, from, to};
+
+                        delete imag_board;
+
                     }
+                );
 
-                    int material = imag_board->count_material(player);
+                threads.push_back(move(thr));
+                // move the object here instead of copying because threads are not copy-able
 
-                    move_evaluations.at(idx) = {material, from, to};
-
-                    delete imag_board;
-
-                }
-            );
-
-            threads.push_back(move(thr));
-            // move the object here instead of copying because threads are not copy-able
-
-        }
-
-        for(auto & thr : threads){
-            thr.join();
-        }
-
-#else
-
-        vector< tuple< int , pair<int,int> , pair<int,int> > > move_evaluations = {};
-
-        for(auto [from, to] : all_valid_moves){
-
-            Board * imag_board = duplicate();
-
-            enum winner imag_winner = imag_board->move_piece_to(from, to);
-
-            if(imag_winner == WINNER_NO_WINNER_YET){
-                int depth = additional_depth - 1;
-                if(depth >= 0){
-                    imag_board->next_turn(depth);
-                    // ignoring the return value
-                }
             }
 
-            int material = imag_board->count_material(player);
+            for(auto & thr : threads){
+                thr.join();
+            }
 
-            move_evaluations.push_back({material, from, to});
+        }else{
 
-            delete imag_board;
+            ssize_t idx = -1;
+            for(auto [from, to] : all_valid_moves){
+                idx += 1;
+
+                Board * imag_board = duplicate();
+
+                enum winner imag_winner = imag_board->move_piece_to(from, to);
+
+                if(imag_winner == WINNER_NO_WINNER_YET){
+                    int depth = additional_depth - 1;
+                    if(depth >= 0){
+                        imag_board->next_turn(depth);
+                        // ignoring the return value
+                    }
+                }
+
+                int material = imag_board->count_material(player);
+
+                move_evaluations.at(idx) = {material, from, to};
+
+                delete imag_board;
+
+            }
 
         }
-
-#endif
 
         {
             int best_move_material = INT_MIN;
@@ -1573,7 +1587,7 @@ string Board::get_state(int arg_player_turn, int additional_depth){
 
 void Board::save_calculated_moves(string file){
 
-    (void)(file);
+#if USE_SAVE_FILE
 
     string file_tmp = file + "-tmp";
 
@@ -1588,11 +1602,17 @@ void Board::save_calculated_moves(string file){
     filesystem::rename(file_tmp, file.c_str());
     // this CAN fail
 
+#else
+
+    (void)(file);
+
+#endif
+
 }
 
 void Board::load_calculated_moves(string file){
 
-    // (void)(file);
+#if USE_SAVE_FILE
 
     ifstream f;
     f.open(file, ios::in | ios::binary);
@@ -1604,6 +1624,12 @@ void Board::load_calculated_moves(string file){
     unique_lock lock(*already_calculated_moves_lock); // lock for writing
     file_read___unsortedmap___string___vector__pair__pair_int__pair_int(f, already_calculated_moves);
     lock.unlock();
+
+#else
+
+    (void)(file);
+
+#endif
 
 }
 
@@ -1803,10 +1829,6 @@ void Board::place_pieces(){
 //////
 ///
 
-#define BOT_DIFFICULTY 4
-
-#define SAVE_FILE "saved-moves.sex"
-
 int main(){
 
     Board * board = new Board;
@@ -1840,7 +1862,7 @@ int main(){
 
             winner = board->next_turn(BOT_DIFFICULTY);
 
-            if(rand() <= 0.1){
+            if(rand() <= SAVE_CHANCE){
                 cout << "Saving moves db..." << endl;
                 board->save_calculated_moves(SAVE_FILE);
                 cout << "Saved" << endl;
