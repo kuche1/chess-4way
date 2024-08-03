@@ -15,7 +15,7 @@ FLAGS_STANDARD='-std=c++23'
 FLAGS_STRICT='-Werror -Wextra -Wall -pedantic -Wfatal-errors -Wshadow -Wconversion -fsanitize=undefined -fsanitize=address'
 # -fsanitize=undefined will detect undefined behaviour at runtime (example: signed overflow)
 
-FLAGS_OPTIMISATION=''
+FLAGS_OPTIMISATION='-Ofast -march=native'
 # example: -Ofast -march=native
 
 FLAGS_MISC='-g'

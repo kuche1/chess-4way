@@ -608,7 +608,7 @@ void Piece::draw(){
 
 char Piece::get_representation(){
 
-    char repr;
+    char repr = 0;
 
     switch(type){
         case PT_PAWN:
@@ -1321,7 +1321,7 @@ int Board::count_material(int for_player){
             continue;
         }
 
-        int value;
+        int value = 0;
 
         switch(tile->piece->type){
             case PT_PAWN:
