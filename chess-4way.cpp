@@ -5,7 +5,7 @@
 //
 // rokada
 //
-// reduce the board representation
+// we could further reduce the board representations
 
 ///
 //////
@@ -19,7 +19,7 @@
 
 #define USE_SAVE_FILE true
 #define SAVE_FILE "saved-moves.sex"
-#define SAVE_CHANCE 0.15
+#define SAVE_CHANCE (RAND_MAX / 10 * 1)
 
 ///
 //////
@@ -212,7 +212,7 @@ class Piece{
 
         void draw();
 
-        char get_representation(); // includes the type of the piece and the owner
+        unsigned char get_representation(); // includes the type of the piece and the owner
 
     private:
 
@@ -788,28 +788,28 @@ void Piece::draw(){
 
 }
 
-char Piece::get_representation(){
+unsigned char Piece::get_representation(){
 
-    char repr = 0;
+    unsigned char repr = 0;
 
     switch(type){
         case PT_PAWN:
-            repr = 'a';
+            repr = 0x1;
             break;
         case PT_KNIGHT:
-            repr = 'b';
+            repr = 0x2;
             break;
         case PT_BISHOP:
-            repr = 'c';
+            repr = 0x3;
             break;
         case PT_ROOK:
-            repr = 'd';
+            repr = 0x4;
             break;
         case PT_QUEEN:
-            repr = 'e';
+            repr = 0x5;
             break;
         case PT_KING:
-            repr = 'f';
+            repr = 0x6;
             break;
     }
 
@@ -1572,14 +1572,34 @@ string Board::get_state(int arg_player_turn, int additional_depth){
     char depth_as_char = '0' + static_cast<char>(additional_depth);
     state += depth_as_char;
 
+    unsigned char repr = 0;
+    bool repr_full = false;
+
     for(Tile * tile : tiles){
+
         Piece * piece = tile->piece;
+
+        unsigned char rep;
+
         if(piece){
-            state += piece->get_representation();
+            rep = piece->get_representation();
         }else{
-            state += " ";
+            rep = 0x0;
         }
+
+        repr |= rep;
+
+        if(repr_full){
+            state += repr;
+        }else{
+            repr = rep << 4;
+        }
+
+        repr_full = !repr_full;
+
     }
+
+    assert(!repr_full);
 
     return state;
 
