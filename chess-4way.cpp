@@ -1057,7 +1057,7 @@ enum winner Board::next_turn(int additional_depth){
             return WINNER_STALEMATE;
         }
 
-        vector< tuple< int , pair<int,int> , pair<int,int> > > move_evaluations;
+        vector< tuple< int , pair<int,int> , pair<int,int> > > move_evaluations = {};
 
         for(auto [from, to] : all_valid_moves){
 
