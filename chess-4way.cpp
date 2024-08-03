@@ -65,25 +65,32 @@ using namespace std;
 //////
 ///
 
-#define ICON_PAWN_WHITE   "♙"
-#define ICON_KNIGHT_WHITE "♘"
-#define ICON_BISHOP_WHITE "♗"
-#define ICON_ROOK_WHITE   "♖"
-#define ICON_QUEEN_WHITE  "♕"
-#define ICON_KING_WHITE   "♔"
+// #define ICON_PAWN_WHITE   "♙"
+// #define ICON_KNIGHT_WHITE "♘"
+// #define ICON_BISHOP_WHITE "♗"
+// #define ICON_ROOK_WHITE   "♖"
+// #define ICON_QUEEN_WHITE  "♕"
+// #define ICON_KING_WHITE   "♔"
 
-#define ICON_PAWN_BLACK   "♟︎"
-#define ICON_KNIGHT_BLACK "♞"
-#define ICON_BISHOP_BLACK "♝"
-#define ICON_ROOK_BLACK   "♜"
-#define ICON_QUEEN_BLACK  "♛"
-#define ICON_KING_BLACK   "♚"
+// #define ICON_PAWN_BLACK   "♟︎"
+// #define ICON_KNIGHT_BLACK "♞"
+// #define ICON_BISHOP_BLACK "♝"
+// #define ICON_ROOK_BLACK   "♜"
+// #define ICON_QUEEN_BLACK  "♛"
+// #define ICON_KING_BLACK   "♚"
 
-#define ICON_WARNING "⚠"
+// #define ICON_WARNING "⚠"
+
+#define ICON_PAWN   "♟︎"
+#define ICON_KNIGHT "♞"
+#define ICON_BISHOP "♝"
+#define ICON_ROOK   "♜"
+#define ICON_QUEEN  "♛"
+#define ICON_KING   "♚"
 
 ///
 //////
-/////////// enum + declaration
+/////////// enum
 //////
 ///
 
@@ -102,6 +109,12 @@ enum winner{
     WINNER_PLAYER_1,
     WINNER_STALEMATE,
 };
+
+///
+//////
+/////////// declaration
+//////
+///
 
 class Tile;
 
@@ -149,8 +162,6 @@ class Board{
 class Piece{
 
     public:
-
-        string icon;
 
         int forward_y;
         // int forward_x = 0; // this only makes sense in 4way chess
@@ -303,6 +314,13 @@ pair<int, int> input_chess_pos(string prompt){
 //////
 ///
 
+#define COL_RESET "\033[0m"
+
+#define COL_INT(color_number) ("\033[38;5;" #color_number "m")
+
+#define COL_PLAYER_0 COL_INT(40)
+#define COL_PLAYER_1 COL_INT(196)
+
 void disp_clear(){
     cout << "\033[H\033[J";
 }
@@ -324,8 +342,6 @@ void disp_cur_set(int y, int x){
 Piece * Piece::duplicate(Tile * arg_location){
 
     Piece * copy = new Piece;
-
-    copy->icon = icon;
 
     copy->forward_y = forward_y;
 
@@ -427,7 +443,40 @@ pair<int, int> Piece::get_pos(){
 
 void Piece::draw(){
 
-    cout << icon;
+    string icon;
+
+    switch(type){
+        case PT_PAWN:
+            icon = ICON_PAWN;
+            break;
+        case PT_KNIGHT:
+            icon = ICON_KNIGHT;
+            break;
+        case PT_BISHOP:
+            icon = ICON_BISHOP;
+            break;
+        case PT_ROOK:
+            icon = ICON_ROOK;
+            break;
+        case PT_QUEEN:
+            icon = ICON_QUEEN;
+            break;
+        case PT_KING:
+            icon = ICON_KING;
+            break;
+    }
+
+    string color;
+
+    if(owner == 0){
+        color = COL_PLAYER_0;
+    }else if(owner == 1){
+        color = COL_PLAYER_1;
+    }else{
+        UNREACHABLE();
+    }
+
+    cout << color << icon << COL_RESET;
 
 }
 
@@ -909,7 +958,7 @@ void Board::draw(){
 
     cout << endl;
 
-    cout << "Material for player 0 (white): " << count_material(0) << endl;
+    cout << "Material for player 0: " << count_material(0) << endl;
 
 }
 
@@ -1217,13 +1266,13 @@ void Board::connect_neighbours(){
 
 void Board::place_pieces(){
 
-    for(auto [icon, type, owner, forward_y, y, x_start, x_step] : {
-        make_tuple(ICON_PAWN_BLACK,   PT_PAWN,   1, 1, 1, 0, 1), make_tuple(ICON_PAWN_WHITE,   PT_PAWN,   0, -1, 6, 0, 1),
-        make_tuple(ICON_ROOK_BLACK,   PT_ROOK,   1, 1, 0, 0, 7), make_tuple(ICON_ROOK_WHITE,   PT_ROOK,   0, -1, 7, 0, 7),
-        make_tuple(ICON_KNIGHT_BLACK, PT_KNIGHT, 1, 1, 0, 1, 5), make_tuple(ICON_KNIGHT_WHITE, PT_KNIGHT, 0, -1, 7, 1, 5),
-        make_tuple(ICON_BISHOP_BLACK, PT_BISHOP, 1, 1, 0, 2, 3), make_tuple(ICON_BISHOP_WHITE, PT_BISHOP, 0, -1, 7, 2, 3),
-        make_tuple(ICON_QUEEN_BLACK,  PT_QUEEN,  1, 1, 0, 3, 9), make_tuple(ICON_QUEEN_WHITE,  PT_QUEEN,  0, -1, 7, 3, 9),
-        make_tuple(ICON_KING_BLACK,   PT_KING,   1, 1, 0, 4, 9), make_tuple(ICON_KING_WHITE,   PT_KING  , 0, -1, 7, 4, 9),
+    for(auto [type, owner, forward_y, y, x_start, x_step] : {
+        make_tuple(PT_PAWN,   1, 1, 1, 0, 1), make_tuple(PT_PAWN,   0, -1, 6, 0, 1),
+        make_tuple(PT_ROOK,   1, 1, 0, 0, 7), make_tuple(PT_ROOK,   0, -1, 7, 0, 7),
+        make_tuple(PT_KNIGHT, 1, 1, 0, 1, 5), make_tuple(PT_KNIGHT, 0, -1, 7, 1, 5),
+        make_tuple(PT_BISHOP, 1, 1, 0, 2, 3), make_tuple(PT_BISHOP, 0, -1, 7, 2, 3),
+        make_tuple(PT_QUEEN,  1, 1, 0, 3, 9), make_tuple(PT_QUEEN,  0, -1, 7, 3, 9),
+        make_tuple(PT_KING,   1, 1, 0, 4, 9), make_tuple(PT_KING  , 0, -1, 7, 4, 9),
     }){
 
         for(int x=x_start; x<8; x+=x_step){
@@ -1240,7 +1289,6 @@ void Board::place_pieces(){
             }
 
             Piece * piece = new Piece{
-                .icon = icon,
                 .forward_y = forward_y,
                 .owner = owner,
                 .type = type,
@@ -1347,10 +1395,10 @@ int main(){
             UNREACHABLE();
             break;
         case WINNER_PLAYER_0:
-            cout << "Winner: player 0 (white)" << endl;
+            cout << "Winner: player 0" << endl;
             break;
         case WINNER_PLAYER_1:
-            cout << "Winner: player 1 (black)" << endl;
+            cout << "Winner: player 1" << endl;
             break;
         case WINNER_STALEMATE:
             cout << "Stalemate" << endl;
