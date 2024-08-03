@@ -252,6 +252,43 @@ int input_int(){
     return stoi(data); // this CAN crash
 }
 
+pair<int, int> input_chess_pos(string prompt){
+
+    while(true){
+
+        cout << prompt;
+
+        string data = input_string();
+
+        if(data.size() != 2){
+            cout << "try again: length needs to be 2" << endl;
+            continue;
+        }
+
+        char x_char = data.at(0);
+        char y_char = data.at(1);
+
+        if(x_char < 'a' || x_char > 'h'){
+            cout << "try again: x coordinate needs to be between `a` and `h`" << endl;
+            continue;
+        }
+
+        int x = x_char - 'a';
+
+        if(y_char < '1' || y_char > '8'){
+            cout << "try again: y coordinate needs to be between `1` and `8`" << endl;
+            continue;
+        }
+
+        int y = y_char - '1';
+        y = 7 - y;
+
+        return {y, x};
+
+    }
+
+}
+
 ///
 //////
 /////////// module: terminal escape code
@@ -1200,24 +1237,39 @@ int main(){
 
         }else if(command == "h"){
 
-            cout << "From y: ";
-            int f0 = input_int();
-            cout << "From x: ";
-            int f1 = input_int();
-            cout << "To y: ";
-            int t0 = input_int();
-            cout << "To x: ";
-            int t1 = input_int();
+            while(true){
 
-            pair<int, int> from = {f0, f1};
-            pair<int, int> to = {t0, t1};
+                pair<int, int> from = input_chess_pos("Move from: ");
+                pair<int, int> to = input_chess_pos("Move to: ");
 
-            board->move_piece_to(from, to);
-            board->player_turn = !board->player_turn;
+                auto [tile_fail, tile] = board->get_tile_at(from);
+                if(tile_fail){
+                    cout << "try again: there is no such tile" << endl;
+                    continue;
+                }
+
+                Piece * piece = tile->piece;
+                if(!piece){
+                    cout << "try again: there is no piece on this tile" << endl;
+                    continue;
+                }
+
+                if(piece->owner != board->player_turn){
+                    cout << "try again: piece is not controlled by the current player" << endl;
+                    continue;
+                }
+
+                board->move_piece_to(from, to);
+                board->player_turn = !board->player_turn;
+
+                break;
+
+            }
 
         }else{
 
             cout << "Invalid command: `" << command << "`" << endl;
+            cout << "PRESS ENTER";
             input_enter();
 
         }
