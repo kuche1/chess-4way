@@ -1397,8 +1397,6 @@ int main(){
 
         board->draw();
 
-        DBG("State: " << board->get_state(board->player_turn));
-
         cout << endl;
 
         cout << "Enter command: ";
