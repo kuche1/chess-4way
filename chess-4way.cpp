@@ -1197,11 +1197,11 @@ string Board::get_state(int arg_player_turn, int additional_depth){
 
     string state = "";
 
-    assert(arg_player_turn <= 255);
+    assert(arg_player_turn <= 50);
     char player_turn_as_char = '0' + static_cast<char>(arg_player_turn);
     state += player_turn_as_char;
 
-    assert(additional_depth <= 255);
+    assert(additional_depth <= 50);
     char depth_as_char = '0' + static_cast<char>(additional_depth);
     state += depth_as_char;
 
