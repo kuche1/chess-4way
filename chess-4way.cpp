@@ -144,7 +144,7 @@ class Board{
 
         enum winner move_piece_to(pair<int, int> from, pair<int, int> to);
 
-        string get_state(int arg_player_turn);
+        string get_state(int arg_player_turn, int additional_depth);
 
     private:
 
@@ -1015,7 +1015,7 @@ enum winner Board::next_turn(int additional_depth){
 
     // see if this position has already been calculated before
 
-    string current_state = get_state(player);
+    string current_state = get_state(player, additional_depth);
 
     auto it = already_calculated_moves->find(current_state);
 
@@ -1193,13 +1193,17 @@ enum winner Board::move_piece_to(pair<int, int> from, pair<int, int> to){
 
 }
 
-string Board::get_state(int arg_player_turn){
+string Board::get_state(int arg_player_turn, int additional_depth){
 
     string state = "";
 
+    assert(arg_player_turn <= 255);
     char player_turn_as_char = '0' + static_cast<char>(arg_player_turn);
-
     state += player_turn_as_char;
+
+    assert(additional_depth <= 255);
+    char depth_as_char = '0' + static_cast<char>(additional_depth);
+    state += depth_as_char;
 
     for(Tile * tile : tiles){
         Piece * piece = tile->piece;
