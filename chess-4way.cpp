@@ -4,8 +4,6 @@
 // implementing stealmate by repeating turns
 //
 // rokada
-//
-// !!! avoid repeating calculations as to make the bot smarter !!!
 
 ///
 //////
@@ -18,6 +16,8 @@
 #include <cassert>
 #include <random>
 #include <climits>
+// #include <map>
+#include <unordered_map>
 
 ///
 //////
@@ -123,6 +123,8 @@ class Board{
         vector<Tile *> tiles = {};
 
         int player_turn = 0; // which player's turn is it
+
+        unordered_map< string , pair< pair<int, int> , pair<int,int> > > * already_calculated_moves = {};
 
         // Board();
 
@@ -934,6 +936,8 @@ Board::~Board(){
 
 void Board::init(){
 
+    already_calculated_moves = new unordered_map< string , pair< pair<int, int> , pair<int,int> > >;
+
     spawn_tiles();
     connect_neighbours();
     place_pieces();
@@ -951,6 +955,8 @@ Board * Board::duplicate(){
     copy->connect_neighbours();
 
     copy->player_turn = player_turn;
+
+    copy->already_calculated_moves = already_calculated_moves;
 
     return copy;
 
@@ -1004,90 +1010,116 @@ enum winner Board::next_turn(int additional_depth){
     int player = player_turn;
     player_turn = !player_turn;
 
-    vector< pair< pair<int, int> , pair<int, int> > > all_valid_moves = {};
+    pair<int, int> move_from = {-1, -1};
+    pair<int, int> move_to = {-1, -1};
 
-    for(Tile * tile : tiles){
+    // see if this position has already been calculated before
 
-        Piece * piece = tile->piece;
-        if(!piece){
-            continue;
-        }
+    string current_state = get_state(player);
 
-        if(piece->owner != player){
-            continue;
-        }
+    auto it = already_calculated_moves->find(current_state);
 
-        vector<pair<int, int>> valid_moves = piece->get_valid_moves();
+    if(it != already_calculated_moves->end()){
+        // found
 
-        if(valid_moves.size() <= 0){
-            continue;
-        }
+        tie(move_from, move_to) = it->second;
 
-        pair<int, int> piece_pos = piece->get_pos();
+    }else{
 
-        for(pair<int, int> move : valid_moves){
-            all_valid_moves.push_back({piece_pos, move});
-        }
+        vector< pair< pair<int, int> , pair<int, int> > > all_valid_moves = {};
 
-    }
+        for(Tile * tile : tiles){
 
-    if(all_valid_moves.size() <= 0){
-        return WINNER_STALEMATE;
-    }
-
-    vector< tuple< int , pair<int,int> , pair<int,int> > > move_evaluations;
-
-    for(auto [from, to] : all_valid_moves){
-
-        Board * imag_board = duplicate();
-
-        enum winner imag_winner = imag_board->move_piece_to(from, to);
-
-        if(imag_winner == WINNER_NO_WINNER_YET){
-            int depth = additional_depth - 1;
-            if(depth >= 0){
-                imag_board->next_turn(depth);
-                // ignoring the return value here
+            Piece * piece = tile->piece;
+            if(!piece){
+                continue;
             }
-        }
 
-        int material = imag_board->count_material(player);
+            if(piece->owner != player){
+                continue;
+            }
 
-        move_evaluations.push_back({material, from, to});
+            vector<pair<int, int>> valid_moves = piece->get_valid_moves();
 
-        delete imag_board;
+            if(valid_moves.size() <= 0){
+                continue;
+            }
 
-    }
+            pair<int, int> piece_pos = piece->get_pos();
 
-    {
-        int best_move_material = INT_MIN;
-        vector< pair< pair<int, int> , pair<int, int> > > best_moves = {};
-
-        for(auto [material, from, to] : move_evaluations){
-
-            if(material > best_move_material){
-
-                best_move_material = material;
-
-                best_moves = {};
-                best_moves.push_back({from, to});
-                
-            }else if(material == best_move_material){
-
-                best_moves.push_back({from, to});
-
+            for(pair<int, int> move : valid_moves){
+                all_valid_moves.push_back({piece_pos, move});
             }
 
         }
 
-        assert(best_move_material != INT_MIN);
-
-        auto [from, to] = vec_get_random_element(best_moves);
-
-        enum winner winner = move_piece_to(from, to);
-        if(winner != WINNER_NO_WINNER_YET){
-            return winner;
+        if(all_valid_moves.size() <= 0){
+            return WINNER_STALEMATE;
         }
+
+        vector< tuple< int , pair<int,int> , pair<int,int> > > move_evaluations;
+
+        for(auto [from, to] : all_valid_moves){
+
+            Board * imag_board = duplicate();
+
+            enum winner imag_winner = imag_board->move_piece_to(from, to);
+
+            if(imag_winner == WINNER_NO_WINNER_YET){
+                int depth = additional_depth - 1;
+                if(depth >= 0){
+                    imag_board->next_turn(depth);
+                    // ignoring the return value here
+                }
+            }
+
+            int material = imag_board->count_material(player);
+
+            move_evaluations.push_back({material, from, to});
+
+            delete imag_board;
+
+        }
+
+        {
+            int best_move_material = INT_MIN;
+            vector< pair< pair<int, int> , pair<int, int> > > best_moves = {};
+
+            for(auto [material, from, to] : move_evaluations){
+
+                if(material > best_move_material){
+
+                    best_move_material = material;
+
+                    best_moves = {};
+                    best_moves.push_back({from, to});
+                    
+                }else if(material == best_move_material){
+
+                    best_moves.push_back({from, to});
+
+                }
+
+            }
+
+            assert(best_move_material != INT_MIN);
+
+            tie(move_from, move_to) = vec_get_random_element(best_moves);
+
+            (*already_calculated_moves)[current_state] = {move_from, move_to};
+
+        }
+
+    }
+
+    assert(move_from.first != -1);
+    assert(move_from.second != -1);
+    assert(move_to.first != -1);
+    assert(move_to.second != -1);
+
+    enum winner winner = move_piece_to(move_from, move_to);
+    if(winner != WINNER_NO_WINNER_YET){
+        return winner;
     }
 
     return WINNER_NO_WINNER_YET;
@@ -1352,6 +1384,8 @@ void Board::place_pieces(){
 //////
 ///
 
+#define BOT_DIFFICULTY 3
+
 int main(){
 
     Board * board = new Board;
@@ -1363,7 +1397,7 @@ int main(){
 
         board->draw();
 
-        cout << "State: " << board->get_state(board->player_turn) << endl;
+        DBG("State: " << board->get_state(board->player_turn));
 
         cout << endl;
 
@@ -1372,7 +1406,7 @@ int main(){
 
         if(command == "b"){
 
-            winner = board->next_turn(2);
+            winner = board->next_turn(BOT_DIFFICULTY);
 
         }else if(command == "h"){
 
