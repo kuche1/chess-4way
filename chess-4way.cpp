@@ -94,6 +94,43 @@ enum winner{
 
 class Tile;
 
+class Board{
+
+    public:
+
+        vector<Tile *> tiles = {};
+
+        int player_turn = 0; // which player's turn is it
+
+        // Board();
+
+        ~Board();
+
+        void init();
+
+        Board * duplicate();
+
+        void draw();
+
+        enum winner next_turn();
+
+        int count_material();
+
+        Tile * get_tile_at(int y, int x);
+
+    private:
+
+        pair<bool, ssize_t> calc_idx(int y, int x);
+
+        void set_tile_at(int y, int x, Tile * tile);
+
+        void spawn_tiles();
+
+        void connect_neighbours();
+
+        void place_pieces();
+};
+
 class Piece{
 
     public:
@@ -113,21 +150,21 @@ class Piece{
 
         Piece * duplicate(Tile * arg_location);
 
-        vector<Tile *> get_valid_moves();
+        vector<pair<int, int>> get_valid_moves();
 
-        enum winner move_to(Tile * tile);
+        enum winner move_to(Board * board, pair<int, int> pos);
 
     private:
 
-        vector<Tile *> gen_valid_moves_pawn();
+        vector<pair<int, int>> gen_valid_moves_pawn();
 
-        vector<Tile *> gen_valid_moves_knight();
+        vector<pair<int, int>> gen_valid_moves_knight();
 
-        vector<Tile *> gen_valid_moves_bishop();
+        vector<pair<int, int>> gen_valid_moves_bishop();
 
-        vector<Tile *> gen_valid_moves_rook();
+        vector<pair<int, int>> gen_valid_moves_rook();
 
-        vector<Tile *> gen_valid_moves_king();
+        vector<pair<int, int>> gen_valid_moves_king();
 
 };
 
@@ -152,6 +189,8 @@ class Tile{
         Piece * piece = nullptr;
 
         Tile * duplicate();
+
+        pair<int, int> get_pos();
 
 };
 
@@ -236,9 +275,9 @@ Piece * Piece::duplicate(Tile * arg_location){
 
 }
 
-vector<Tile *> Piece::get_valid_moves(){
+vector<pair<int, int>> Piece::get_valid_moves(){
 
-    vector<Tile *> moves = {};
+    vector<pair<int, int>> moves = {};
 
     switch(type){
 
@@ -260,7 +299,7 @@ vector<Tile *> Piece::get_valid_moves(){
 
         case PT_QUEEN:{
             moves = gen_valid_moves_bishop();
-            for(Tile * rook_move : gen_valid_moves_rook()){
+            for(pair<int, int> rook_move : gen_valid_moves_rook()){
                 moves.push_back(rook_move);
             }
         }break;
@@ -275,7 +314,12 @@ vector<Tile *> Piece::get_valid_moves(){
 
 }
 
-enum winner Piece::move_to(Tile * tile){
+enum winner Piece::move_to(Board * board, pair<int, int> pos){
+
+    Tile * tile = board->get_tile_at(pos.first, pos.second);
+    if(!tile){
+        UNREACHABLE();
+    }
 
     has_not_moved = false;
 
@@ -308,30 +352,30 @@ enum winner Piece::move_to(Tile * tile){
 
 // private
 
-vector<Tile *> Piece::gen_valid_moves_pawn(){
+vector<pair<int, int>> Piece::gen_valid_moves_pawn(){
 
-    vector<Tile *> moves = {};
+    vector<pair<int, int>> moves = {};
 
     if(forward_y == -1){
 
         if(location->neighbour_up && !location->neighbour_up->piece){
 
-            moves.push_back(location->neighbour_up);
+            moves.push_back(location->neighbour_up->get_pos());
 
             if(has_not_moved && location->neighbour_up->neighbour_up && !location->neighbour_up->neighbour_up->piece){
 
-                moves.push_back(location->neighbour_up->neighbour_up);
+                moves.push_back(location->neighbour_up->neighbour_up->get_pos());
 
             }
 
         }
 
         if(location->neighbour_upleft && (location->neighbour_upleft->piece && location->neighbour_upleft->piece->owner != owner)){
-            moves.push_back(location->neighbour_upleft);
+            moves.push_back(location->neighbour_upleft->get_pos());
         }
 
         if(location->neighbour_upright && (location->neighbour_upright->piece && location->neighbour_upright->piece->owner != owner)){
-            moves.push_back(location->neighbour_upright);
+            moves.push_back(location->neighbour_upright->get_pos());
         }
 
         // TODO en passant
@@ -340,22 +384,22 @@ vector<Tile *> Piece::gen_valid_moves_pawn(){
 
         if(location->neighbour_down && !location->neighbour_down->piece){
 
-            moves.push_back(location->neighbour_down);
+            moves.push_back(location->neighbour_down->get_pos());
 
             if(has_not_moved && location->neighbour_down->neighbour_down && !location->neighbour_down->neighbour_down->piece){
 
-                moves.push_back(location->neighbour_down->neighbour_down);
+                moves.push_back(location->neighbour_down->neighbour_down->get_pos());
 
             }
 
         }
 
         if(location->neighbour_downleft && (location->neighbour_downleft->piece && location->neighbour_downleft->piece->owner != owner)){
-            moves.push_back(location->neighbour_downleft);
+            moves.push_back(location->neighbour_downleft->get_pos());
         }
 
         if(location->neighbour_downright && (location->neighbour_downright->piece && location->neighbour_downright->piece->owner != owner)){
-            moves.push_back(location->neighbour_downright);
+            moves.push_back(location->neighbour_downright->get_pos());
         }
 
         // TODO en passant
@@ -370,9 +414,9 @@ vector<Tile *> Piece::gen_valid_moves_pawn(){
 
 }
 
-vector<Tile *> Piece::gen_valid_moves_knight(){
+vector<pair<int, int>> Piece::gen_valid_moves_knight(){
 
-    vector<Tile *> moves = {};
+    vector<pair<int, int>> moves = {};
 
     // TODO in the 4way chess map this won't be sufficient
 
@@ -380,13 +424,13 @@ vector<Tile *> Piece::gen_valid_moves_knight(){
 
         if(location->neighbour_up->neighbour_upleft){
             if(!location->neighbour_up->neighbour_upleft->piece || (location->neighbour_up->neighbour_upleft->piece->owner != owner)){
-                moves.push_back(location->neighbour_up->neighbour_upleft);
+                moves.push_back(location->neighbour_up->neighbour_upleft->get_pos());
             }
         }
 
         if(location->neighbour_up->neighbour_upright){
             if(!location->neighbour_up->neighbour_upright->piece || (location->neighbour_up->neighbour_upright->piece->owner != owner)){
-                moves.push_back(location->neighbour_up->neighbour_upright);
+                moves.push_back(location->neighbour_up->neighbour_upright->get_pos());
             }
         }
 
@@ -396,13 +440,13 @@ vector<Tile *> Piece::gen_valid_moves_knight(){
 
         if(location->neighbour_down->neighbour_downleft){
             if(!location->neighbour_down->neighbour_downleft->piece || (location->neighbour_down->neighbour_downleft->piece->owner != owner)){
-                moves.push_back(location->neighbour_down->neighbour_downleft);
+                moves.push_back(location->neighbour_down->neighbour_downleft->get_pos());
             }
         }
 
         if(location->neighbour_down->neighbour_downright){
             if(!location->neighbour_down->neighbour_downright->piece || (location->neighbour_down->neighbour_downright->piece->owner != owner)){
-                moves.push_back(location->neighbour_down->neighbour_downright);
+                moves.push_back(location->neighbour_down->neighbour_downright->get_pos());
             }
         }
 
@@ -412,13 +456,13 @@ vector<Tile *> Piece::gen_valid_moves_knight(){
 
         if(location->neighbour_left->neighbour_upleft){
             if(!location->neighbour_left->neighbour_upleft->piece || (location->neighbour_left->neighbour_upleft->piece->owner != owner)){
-                moves.push_back(location->neighbour_left->neighbour_upleft);
+                moves.push_back(location->neighbour_left->neighbour_upleft->get_pos());
             }
         }
 
         if(location->neighbour_left->neighbour_downright){
             if(!location->neighbour_left->neighbour_downright->piece || (location->neighbour_left->neighbour_downright->piece->owner != owner)){
-                moves.push_back(location->neighbour_left->neighbour_downright);
+                moves.push_back(location->neighbour_left->neighbour_downright->get_pos());
             }
         }
 
@@ -428,13 +472,13 @@ vector<Tile *> Piece::gen_valid_moves_knight(){
 
         if(location->neighbour_right->neighbour_upright){
             if(!location->neighbour_right->neighbour_upright->piece || (location->neighbour_right->neighbour_upright->piece->owner != owner)){
-                moves.push_back(location->neighbour_right->neighbour_upright);
+                moves.push_back(location->neighbour_right->neighbour_upright->get_pos());
             }
         }
 
         if(location->neighbour_right->neighbour_downright){
             if(!location->neighbour_right->neighbour_downright->piece || (location->neighbour_right->neighbour_downright->piece->owner != owner)){
-                moves.push_back(location->neighbour_right->neighbour_downright);
+                moves.push_back(location->neighbour_right->neighbour_downright->get_pos());
             }
         }
 
@@ -444,9 +488,9 @@ vector<Tile *> Piece::gen_valid_moves_knight(){
 
 }
 
-vector<Tile *> Piece::gen_valid_moves_bishop(){
+vector<pair<int, int>> Piece::gen_valid_moves_bishop(){
 
-    vector<Tile *> moves = {};
+    vector<pair<int, int>> moves = {};
 
     {
         Tile * pos = location;
@@ -459,7 +503,7 @@ vector<Tile *> Piece::gen_valid_moves_bishop(){
 
             if(pos->piece){
                 if(pos->piece->owner != owner){
-                    moves.push_back(pos);
+                    moves.push_back(pos->get_pos());
                 }
 
                 break;
@@ -478,7 +522,7 @@ vector<Tile *> Piece::gen_valid_moves_bishop(){
 
             if(pos->piece){
                 if(pos->piece->owner != owner){
-                    moves.push_back(pos);
+                    moves.push_back(pos->get_pos());
                 }
 
                 break;
@@ -497,7 +541,7 @@ vector<Tile *> Piece::gen_valid_moves_bishop(){
 
             if(pos->piece){
                 if(pos->piece->owner != owner){
-                    moves.push_back(pos);
+                    moves.push_back(pos->get_pos());
                 }
 
                 break;
@@ -516,7 +560,7 @@ vector<Tile *> Piece::gen_valid_moves_bishop(){
 
             if(pos->piece){
                 if(pos->piece->owner != owner){
-                    moves.push_back(pos);
+                    moves.push_back(pos->get_pos());
                 }
 
                 break;
@@ -528,9 +572,9 @@ vector<Tile *> Piece::gen_valid_moves_bishop(){
 
 }
 
-vector<Tile *> Piece::gen_valid_moves_rook(){
+vector<pair<int, int>> Piece::gen_valid_moves_rook(){
 
-    vector<Tile *> moves = {};
+    vector<pair<int, int>> moves = {};
 
     {
         Tile * pos = location;
@@ -543,7 +587,7 @@ vector<Tile *> Piece::gen_valid_moves_rook(){
 
             if(pos->piece){
                 if(pos->piece->owner != owner){
-                    moves.push_back(pos);
+                    moves.push_back(pos->get_pos());
                 }
 
                 break;
@@ -562,7 +606,7 @@ vector<Tile *> Piece::gen_valid_moves_rook(){
 
             if(pos->piece){
                 if(pos->piece->owner != owner){
-                    moves.push_back(pos);
+                    moves.push_back(pos->get_pos());
                 }
 
                 break;
@@ -581,7 +625,7 @@ vector<Tile *> Piece::gen_valid_moves_rook(){
 
             if(pos->piece){
                 if(pos->piece->owner != owner){
-                    moves.push_back(pos);
+                    moves.push_back(pos->get_pos());
                 }
 
                 break;
@@ -600,7 +644,7 @@ vector<Tile *> Piece::gen_valid_moves_rook(){
 
             if(pos->piece){
                 if(pos->piece->owner != owner){
-                    moves.push_back(pos);
+                    moves.push_back(pos->get_pos());
                 }
 
                 break;
@@ -612,40 +656,40 @@ vector<Tile *> Piece::gen_valid_moves_rook(){
 
 }
 
-vector<Tile *> Piece::gen_valid_moves_king(){
+vector<pair<int, int>> Piece::gen_valid_moves_king(){
 
-    vector<Tile *> moves = {};
+    vector<pair<int, int>> moves = {};
 
     if(location->neighbour_up && (!location->neighbour_up->piece || location->neighbour_up->piece->owner != owner)){
-        moves.push_back(location->neighbour_up);
+        moves.push_back(location->neighbour_up->get_pos());
     }
 
     if(location->neighbour_upright && (!location->neighbour_upright->piece || location->neighbour_upright->piece->owner != owner)){
-        moves.push_back(location->neighbour_upright);
+        moves.push_back(location->neighbour_upright->get_pos());
     }
 
     if(location->neighbour_right && (!location->neighbour_right->piece || location->neighbour_right->piece->owner != owner)){
-        moves.push_back(location->neighbour_right);
+        moves.push_back(location->neighbour_right->get_pos());
     }
 
     if(location->neighbour_downright && (!location->neighbour_downright->piece || location->neighbour_downright->piece->owner != owner)){
-        moves.push_back(location->neighbour_downright);
+        moves.push_back(location->neighbour_downright->get_pos());
     }
 
     if(location->neighbour_down && (!location->neighbour_down->piece || location->neighbour_down->piece->owner != owner)){
-        moves.push_back(location->neighbour_down);
+        moves.push_back(location->neighbour_down->get_pos());
     }
 
     if(location->neighbour_downleft && (!location->neighbour_downleft->piece || location->neighbour_downleft->piece->owner != owner)){
-        moves.push_back(location->neighbour_downleft);
+        moves.push_back(location->neighbour_downleft->get_pos());
     }
 
     if(location->neighbour_left && (!location->neighbour_left->piece || location->neighbour_left->piece->owner != owner)){
-        moves.push_back(location->neighbour_left);
+        moves.push_back(location->neighbour_left->get_pos());
     }
 
     if(location->neighbour_upleft && (!location->neighbour_upleft->piece || location->neighbour_upleft->piece->owner != owner)){
-        moves.push_back(location->neighbour_upleft);
+        moves.push_back(location->neighbour_upleft->get_pos());
     }
 
     return moves;
@@ -675,375 +719,371 @@ Tile * Tile::duplicate(){
 
 }
 
+pair<int, int> Tile::get_pos(){
+
+    return {y, x};
+
+}
+
 ///
 //////
 /////////// module: board
 //////
 ///
 
-class Board{
+// Board::Board(){
+// }
 
-    public:
+Board::~Board(){
 
-        vector<Tile *> tiles = {};
+    for(Tile * tile : tiles){
 
-        int player_turn = 0; // which player's turn is it
+        if(tile->piece){
+            delete tile->piece;
+            tile->piece = nullptr;
+        }
 
-        // Board(){
-        // }
+        delete tile;
 
-        ~Board(){
+    }
 
-            for(Tile * tile : tiles){
+}
 
-                if(tile->piece){
-                    delete tile->piece;
-                    tile->piece = nullptr;
-                }
+void Board::init(){
 
-                delete tile;
+    spawn_tiles();
+    connect_neighbours();
+    place_pieces();
 
-            }
+}
+
+Board * Board::duplicate(){
+
+    Board * copy = new Board;
+
+    for(Tile * tile : tiles){
+        copy->tiles.push_back(tile->duplicate());
+    }
+
+    copy->connect_neighbours();
+
+    copy->player_turn = player_turn;
+
+    return copy;
+
+}
+
+void Board::draw(){
+
+    disp_clear();
+
+    for(Tile * tile : tiles){
+
+        int draw_y = tile->y * 2 + 1;
+        int draw_x = tile->x * 4 + 2;
+
+        { // draw borders (ineffeciently)
+
+            disp_cur_set(draw_y, draw_x - 2);
+            cout << "|";
+
+            disp_cur_set(draw_y, draw_x + 2);
+            cout << "|";
+
+            disp_cur_set(draw_y - 1, draw_x - 1);
+            cout << "---";
+
+            disp_cur_set(draw_y + 1, draw_x - 1);
+            cout << "---";
 
         }
 
-        void init(){
-
-            spawn_tiles();
-            connect_neighbours();
-            place_pieces();
-
+        Piece * piece = tile->piece;
+        if(!piece){
+            continue;
         }
 
-        Board * duplicate(){
+        disp_cur_set(draw_y, draw_x);
+        
+        cout << piece->icon;
+    }
 
-            Board * copy = new Board;
+    cout << endl;
 
-            for(Tile * tile : tiles){
-                copy->tiles.push_back(tile->duplicate());
-            }
+    cout << endl;
 
-            copy->connect_neighbours();
+    cout << "Material: " << count_material() << endl;
 
-            copy->player_turn = player_turn;
+}
 
-            return copy;
+enum winner Board::next_turn(){
 
+    int player = player_turn;
+    player_turn = !player_turn;
+
+    vector<pair<Piece *, vector<pair<int, int>>>> all_valid_moves = {};
+
+    for(Tile * tile : tiles){
+
+        Piece * piece = tile->piece;
+        if(!piece){
+            continue;
         }
 
-        void draw(){
-
-            disp_clear();
-
-            for(Tile * tile : tiles){
-
-                int draw_y = tile->y * 2 + 1;
-                int draw_x = tile->x * 4 + 2;
-
-                { // draw borders (ineffeciently)
-
-                    disp_cur_set(draw_y, draw_x - 2);
-                    cout << "|";
-
-                    disp_cur_set(draw_y, draw_x + 2);
-                    cout << "|";
-
-                    disp_cur_set(draw_y - 1, draw_x - 1);
-                    cout << "---";
-
-                    disp_cur_set(draw_y + 1, draw_x - 1);
-                    cout << "---";
-
-                }
-
-                Piece * piece = tile->piece;
-                if(!piece){
-                    continue;
-                }
-
-                disp_cur_set(draw_y, draw_x);
-                
-                cout << piece->icon;
-            }
-
-            cout << endl;
-
-            cout << endl;
-
-            cout << "Material: " << count_material() << endl;
-
+        if(piece->owner != player){
+            continue;
         }
 
-        enum winner next_turn(){
+        vector<pair<int, int>> valid_moves = piece->get_valid_moves();
 
-            int player = player_turn;
-            player_turn = !player_turn;
-
-            vector<pair<Piece *, vector<Tile *>>> all_valid_moves = {};
-
-            for(Tile * tile : tiles){
-
-                Piece * piece = tile->piece;
-                if(!piece){
-                    continue;
-                }
-
-                if(piece->owner != player){
-                    continue;
-                }
-
-                vector<Tile *> valid_moves = piece->get_valid_moves();
-
-                if(valid_moves.size() <= 0){
-                    continue;
-                }
-
-                all_valid_moves.push_back({piece, valid_moves});
-
-            }
-
-            if(all_valid_moves.size() <= 0){
-                return WINNER_STALEMATE;
-            }
-
-            {
-                auto [piece, valid_moves] = vec_get_random_element(all_valid_moves);
-
-                enum winner winner = piece->move_to(vec_get_random_element(valid_moves));
-                if(winner != WINNER_NO_WINNER_YET){
-                    return winner;
-                }
-            }
-
-            return WINNER_NO_WINNER_YET;
-
+        if(valid_moves.size() <= 0){
+            continue;
         }
 
-        int count_material(){
+        all_valid_moves.push_back({piece, valid_moves});
 
-            int count = 0;
+    }
 
-            for(Tile * tile : tiles){
+    if(all_valid_moves.size() <= 0){
+        return WINNER_STALEMATE;
+    }
 
-                if(!tile->piece){
-                    continue;
-                }
+    {
+        auto [piece, valid_moves] = vec_get_random_element(all_valid_moves);
 
-                int value;
+        enum winner winner = piece->move_to(this, vec_get_random_element(valid_moves));
+        if(winner != WINNER_NO_WINNER_YET){
+            return winner;
+        }
+    }
 
-                switch(tile->piece->type){
-                    case PT_PAWN:
-                        value = 1;
-                        break;
-                    case PT_KNIGHT:
-                        value = 4;
-                        break;
-                    case PT_BISHOP:
-                        value = 3;
-                        break;
-                    case PT_ROOK:
-                        value = 5;
-                        break;
-                    case PT_QUEEN:
-                        value = 9;
-                        break;
-                    case PT_KING:
-                        value = 200;
-                        break;
-                }
+    return WINNER_NO_WINNER_YET;
 
-                if(tile->piece->owner == 0){
-                    value *= -1;
-                }else if(tile->piece->owner == 1){
-                    value *= 1;
-                }else{
-                    UNREACHABLE();
-                }
+}
 
-                count += value;
+int Board::count_material(){
 
-            }
+    int count = 0;
 
-            return count;
+    for(Tile * tile : tiles){
+
+        if(!tile->piece){
+            continue;
         }
 
-    private:
+        int value;
 
-        pair<bool, ssize_t> calc_idx(int y, int x){
-            if(y < 0 || y >= 8 || x < 0 || x >= 8){
-                return {true, 0};
-            }
-            return {false, y * 8 + x};
+        switch(tile->piece->type){
+            case PT_PAWN:
+                value = 1;
+                break;
+            case PT_KNIGHT:
+                value = 4;
+                break;
+            case PT_BISHOP:
+                value = 3;
+                break;
+            case PT_ROOK:
+                value = 5;
+                break;
+            case PT_QUEEN:
+                value = 9;
+                break;
+            case PT_KING:
+                value = 200;
+                break;
         }
 
-        Tile * get_tile_at(int y, int x){
+        if(tile->piece->owner == 0){
+            value *= -1;
+        }else if(tile->piece->owner == 1){
+            value *= 1;
+        }else{
+            UNREACHABLE();
+        }
+
+        count += value;
+
+    }
+
+    return count;
+}
+
+Tile * Board::get_tile_at(int y, int x){
+
+    auto [fail_ci, idx] = calc_idx(y, x);
+    if(fail_ci){
+        return nullptr;
+    }
+
+    return tiles[idx];
+
+}
+
+// private
+
+pair<bool, ssize_t> Board::calc_idx(int y, int x){
+    if(y < 0 || y >= 8 || x < 0 || x >= 8){
+        return {true, 0};
+    }
+    return {false, y * 8 + x};
+}
+
+void Board::set_tile_at(int y, int x, Tile * tile){
+
+    auto [fail_ci, idx] = calc_idx(y, x);
+    if(fail_ci){
+        ERR("invalid tile y=" << y << " x=" << x);
+    }
+
+    if(tiles[idx]){
+        ERR("tile not empty y=" << y << " x=" << x);
+    }
+
+    tiles[idx] = tile;
+
+}
+
+void Board::spawn_tiles(){
+
+    if(tiles.size() != 0){
+        ERR("already initialised");
+    }
+
+    for(int y=0; y<8; ++y){
+        for(int x=0; x<8; ++x){
+
+            Tile * tile = new Tile{
+                .y = y,
+                .x = x,
+            };
+
+            tiles.push_back(tile);
+
+        }
+    }
+
+}
+
+void Board::connect_neighbours(){
+
+    for(Tile * tile : tiles){
+
+        { // up
+            int nei_up_y = tile->y - 1;
+            int nei_up_x = tile->x;
+            Tile * nei = get_tile_at(nei_up_y, nei_up_x);
+            if(nei){
+                tile->neighbour_up = nei;
+            }
+        }
+
+        { // down
+            int nei_up_y = tile->y + 1;
+            int nei_up_x = tile->x;
+            Tile * nei = get_tile_at(nei_up_y, nei_up_x);
+            if(nei){
+                tile->neighbour_down = nei;
+            }
+        }
+
+        { // left
+            int nei_up_y = tile->y;
+            int nei_up_x = tile->x - 1;
+            Tile * nei = get_tile_at(nei_up_y, nei_up_x);
+            if(nei){
+                tile->neighbour_left = nei;
+            }
+        }
+
+        { // right
+            int nei_up_y = tile->y;
+            int nei_up_x = tile->x + 1;
+            Tile * nei = get_tile_at(nei_up_y, nei_up_x);
+            if(nei){
+                tile->neighbour_right = nei;
+            }
+        }
+
+        { // up left
+            int nei_up_y = tile->y - 1;
+            int nei_up_x = tile->x - 1;
+            Tile * nei = get_tile_at(nei_up_y, nei_up_x);
+            if(nei){
+                tile->neighbour_upleft = nei;
+            }
+        }
+
+        { // up right
+            int nei_up_y = tile->y - 1;
+            int nei_up_x = tile->x + 1;
+            Tile * nei = get_tile_at(nei_up_y, nei_up_x);
+            if(nei){
+                tile->neighbour_upright = nei;
+            }
+        }
+
+        { // down left
+            int nei_up_y = tile->y + 1;
+            int nei_up_x = tile->x - 1;
+            Tile * nei = get_tile_at(nei_up_y, nei_up_x);
+            if(nei){
+                tile->neighbour_downleft = nei;
+            }
+        }
+
+        { // down right
+            int nei_up_y = tile->y + 1;
+            int nei_up_x = tile->x + 1;
+            Tile * nei = get_tile_at(nei_up_y, nei_up_x);
+            if(nei){
+                tile->neighbour_downright = nei;
+            }
+        }
+
+    }
+
+}
+
+void Board::place_pieces(){
+
+    for(auto [icon, type, owner, forward_y, y, x_start, x_step] : {
+        make_tuple(ICON_PAWN_BLACK,   PT_PAWN,   1, 1, 1, 0, 1), make_tuple(ICON_PAWN_WHITE,   PT_PAWN,   0, -1, 6, 0, 1),
+        make_tuple(ICON_ROOK_BLACK,   PT_ROOK,   1, 1, 0, 0, 7), make_tuple(ICON_ROOK_WHITE,   PT_ROOK,   0, -1, 7, 0, 7),
+        make_tuple(ICON_KNIGHT_BLACK, PT_KNIGHT, 1, 1, 0, 1, 5), make_tuple(ICON_KNIGHT_WHITE, PT_KNIGHT, 0, -1, 7, 1, 5),
+        make_tuple(ICON_BISHOP_BLACK, PT_BISHOP, 1, 1, 0, 2, 3), make_tuple(ICON_BISHOP_WHITE, PT_BISHOP, 0, -1, 7, 2, 3),
+        make_tuple(ICON_QUEEN_BLACK,  PT_QUEEN,  1, 1, 0, 3, 9), make_tuple(ICON_QUEEN_WHITE,  PT_QUEEN,  0, -1, 7, 3, 9),
+        make_tuple(ICON_KING_BLACK,   PT_KING,   1, 1, 0, 4, 9), make_tuple(ICON_KING_WHITE,   PT_KING  , 0, -1, 7, 4, 9),
+    }){
+
+        for(int x=x_start; x<8; x+=x_step){
 
             auto [fail_ci, idx] = calc_idx(y, x);
             if(fail_ci){
-                return nullptr;
+                ERR("invalid position y=" << y << " x=" << x);
             }
 
-            return tiles[idx];
+            Tile * tile = tiles[idx];
+
+            if(tile->piece){
+                ERR("there is already a piece at y=" << y << " x=" << x);
+            }
+
+            Piece * piece = new Piece{
+                .icon = icon,
+                .forward_y = forward_y,
+                .owner = owner,
+                .type = type,
+                .location = tile,
+            };
+
+            tile->piece = piece;
 
         }
 
-        void set_tile_at(int y, int x, Tile * tile){
+    }
 
-            auto [fail_ci, idx] = calc_idx(y, x);
-            if(fail_ci){
-                ERR("invalid tile y=" << y << " x=" << x);
-            }
-
-            if(tiles[idx]){
-                ERR("tile not empty y=" << y << " x=" << x);
-            }
-
-            tiles[idx] = tile;
-
-        }
-
-        void spawn_tiles(){
-
-            if(tiles.size() != 0){
-                ERR("already initialised");
-            }
-
-            for(int y=0; y<8; ++y){
-                for(int x=0; x<8; ++x){
-
-                    Tile * tile = new Tile{
-                        .y = y,
-                        .x = x,
-                    };
-
-                    tiles.push_back(tile);
-
-                }
-            }
-
-        }
-
-        void connect_neighbours(){
-
-            for(Tile * tile : tiles){
-
-                { // up
-                    int nei_up_y = tile->y - 1;
-                    int nei_up_x = tile->x;
-                    Tile * nei = get_tile_at(nei_up_y, nei_up_x);
-                    if(nei){
-                        tile->neighbour_up = nei;
-                    }
-                }
-
-                { // down
-                    int nei_up_y = tile->y + 1;
-                    int nei_up_x = tile->x;
-                    Tile * nei = get_tile_at(nei_up_y, nei_up_x);
-                    if(nei){
-                        tile->neighbour_down = nei;
-                    }
-                }
-
-                { // left
-                    int nei_up_y = tile->y;
-                    int nei_up_x = tile->x - 1;
-                    Tile * nei = get_tile_at(nei_up_y, nei_up_x);
-                    if(nei){
-                        tile->neighbour_left = nei;
-                    }
-                }
-
-                { // right
-                    int nei_up_y = tile->y;
-                    int nei_up_x = tile->x + 1;
-                    Tile * nei = get_tile_at(nei_up_y, nei_up_x);
-                    if(nei){
-                        tile->neighbour_right = nei;
-                    }
-                }
-
-                { // up left
-                    int nei_up_y = tile->y - 1;
-                    int nei_up_x = tile->x - 1;
-                    Tile * nei = get_tile_at(nei_up_y, nei_up_x);
-                    if(nei){
-                        tile->neighbour_upleft = nei;
-                    }
-                }
-
-                { // up right
-                    int nei_up_y = tile->y - 1;
-                    int nei_up_x = tile->x + 1;
-                    Tile * nei = get_tile_at(nei_up_y, nei_up_x);
-                    if(nei){
-                        tile->neighbour_upright = nei;
-                    }
-                }
-
-                { // down left
-                    int nei_up_y = tile->y + 1;
-                    int nei_up_x = tile->x - 1;
-                    Tile * nei = get_tile_at(nei_up_y, nei_up_x);
-                    if(nei){
-                        tile->neighbour_downleft = nei;
-                    }
-                }
-
-                { // down right
-                    int nei_up_y = tile->y + 1;
-                    int nei_up_x = tile->x + 1;
-                    Tile * nei = get_tile_at(nei_up_y, nei_up_x);
-                    if(nei){
-                        tile->neighbour_downright = nei;
-                    }
-                }
-
-            }
-
-        }
-
-        void place_pieces(){
-
-            for(auto [icon, type, owner, forward_y, y, x_start, x_step] : {
-                make_tuple(ICON_PAWN_BLACK,   PT_PAWN,   1, 1, 1, 0, 1), make_tuple(ICON_PAWN_WHITE,   PT_PAWN,   0, -1, 6, 0, 1),
-                make_tuple(ICON_ROOK_BLACK,   PT_ROOK,   1, 1, 0, 0, 7), make_tuple(ICON_ROOK_WHITE,   PT_ROOK,   0, -1, 7, 0, 7),
-                make_tuple(ICON_KNIGHT_BLACK, PT_KNIGHT, 1, 1, 0, 1, 5), make_tuple(ICON_KNIGHT_WHITE, PT_KNIGHT, 0, -1, 7, 1, 5),
-                make_tuple(ICON_BISHOP_BLACK, PT_BISHOP, 1, 1, 0, 2, 3), make_tuple(ICON_BISHOP_WHITE, PT_BISHOP, 0, -1, 7, 2, 3),
-                make_tuple(ICON_QUEEN_BLACK,  PT_QUEEN,  1, 1, 0, 3, 9), make_tuple(ICON_QUEEN_WHITE,  PT_QUEEN,  0, -1, 7, 3, 9),
-                make_tuple(ICON_KING_BLACK,   PT_KING,   1, 1, 0, 4, 9), make_tuple(ICON_KING_WHITE,   PT_KING  , 0, -1, 7, 4, 9),
-            }){
-
-                for(int x=x_start; x<8; x+=x_step){
-
-                    auto [fail_ci, idx] = calc_idx(y, x);
-                    if(fail_ci){
-                        ERR("invalid position y=" << y << " x=" << x);
-                    }
-
-                    Tile * tile = tiles[idx];
-
-                    if(tile->piece){
-                        ERR("there is already a piece at y=" << y << " x=" << x);
-                    }
-
-                    Piece * piece = new Piece{
-                        .icon = icon,
-                        .forward_y = forward_y,
-                        .owner = owner,
-                        .type = type,
-                        .location = tile,
-                    };
-
-                    tile->piece = piece;
-
-                }
-
-            }
-
-        }
-
-};
+}
 
 ///
 //////
