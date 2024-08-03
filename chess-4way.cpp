@@ -21,6 +21,7 @@
 #include <fstream>
 #include <filesystem>
 #include <mutex>
+#include <shared_mutex>
 #include <thread>
 
 ///
@@ -129,7 +130,7 @@ class Board{
         int player_turn = 0; // which player's turn is it
 
         unordered_map< string , vector< pair< pair<int, int> , pair<int,int> > > > * already_calculated_moves = nullptr;
-        mutex * already_calculated_moves_lock = nullptr;
+        shared_mutex * already_calculated_moves_lock = nullptr;
 
         // Board();
 
@@ -1060,7 +1061,7 @@ Board::~Board(){
 void Board::init(){
 
     already_calculated_moves = new unordered_map< string , vector< pair< pair<int, int> , pair<int,int> > > > ();
-    already_calculated_moves_lock = new mutex ();
+    already_calculated_moves_lock = new shared_mutex ();
 
     spawn_tiles();
     connect_neighbours();
@@ -1080,7 +1081,7 @@ Board * Board::duplicate(){
 
     copy->player_turn = player_turn;
 
-    unique_lock<mutex> lock(*already_calculated_moves_lock);
+    shared_lock lock(*already_calculated_moves_lock); // lock for reading
 
     copy->already_calculated_moves = already_calculated_moves;
 
@@ -1148,7 +1149,7 @@ enum winner Board::next_turn(int additional_depth){
 
     string current_state = get_state(player, additional_depth);
 
-    unique_lock<mutex> lock_search(*already_calculated_moves_lock);
+    shared_lock lock_search(*already_calculated_moves_lock); // lock for reading
 
     auto it = already_calculated_moves->find(current_state);
 
@@ -1287,7 +1288,7 @@ enum winner Board::next_turn(int additional_depth){
 
             assert(best_move_material != INT_MIN);
 
-            unique_lock<mutex> lock_add(*already_calculated_moves_lock);
+            unique_lock lock_add(*already_calculated_moves_lock); // lock for writing
 
             (*already_calculated_moves)[current_state] = best_moves;
 
@@ -1410,7 +1411,7 @@ void Board::save_calculated_moves(string file){
     tmp.open(file_tmp, ios::out | ios::binary);
     assert(tmp);
 
-    unique_lock<mutex> lock(*already_calculated_moves_lock);
+    shared_lock lock(*already_calculated_moves_lock); // lock for reading
     file_write___unsortedmap___string___vector__pair__pair_int__pair_int(tmp, already_calculated_moves);
     lock.unlock();
 
@@ -1428,7 +1429,7 @@ void Board::load_calculated_moves(string file){
         return;
     }
 
-    unique_lock<mutex> lock(*already_calculated_moves_lock);
+    unique_lock lock(*already_calculated_moves_lock); // lock for writing
     file_read___unsortedmap___string___vector__pair__pair_int__pair_int(f, already_calculated_moves);
     lock.unlock();
 
