@@ -5,8 +5,6 @@
 //
 // rokada
 //
-// !!! add color codes !!!
-//
 // !!! avoid repeating calculations as to make the bot smarter !!!
 
 ///
