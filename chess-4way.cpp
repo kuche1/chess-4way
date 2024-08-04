@@ -13,15 +13,19 @@
 //////
 ///
 
-#define BOT_BRUTE_FORCE_DEPTH 4
+#define BOT_BRUTE_FORCE_DEPTH 3
 // how many turns into the future is the bot going to attempt to look
-// 0 means only consider what you can take on your turn
+// 0 means only consider what you can take on the current turn
 
-#define BOT_ADDITIONAL_DEPTH_IF_INTERESTING 1
+#define BOT_MAX_NUMBER_OF_MATERIAL_EXTENSIONS 2
+// how many more times can we extend the number of turns we can look into the future
+// if we have more material
 
-#define USE_SAVE_FILE true
+#define USE_SAVE_FILE false
 #define SAVE_FILE "saved-moves.sex"
 #define SAVE_CHANCE (RAND_MAX / 10 * 1)
+
+#define REMEMBER_MOVES (USE_SAVE_FILE && false)
 
 ///
 //////
@@ -160,7 +164,7 @@ class Board{
 
         void draw();
 
-        enum winner next_turn(int additional_depth);
+        enum winner next_turn(bool original_call, int brute_force_depth, int material_extensions_left);
 
         int count_material(int for_player);
 
@@ -168,7 +172,7 @@ class Board{
 
         enum winner move_piece_to(pair<int, int> from, pair<int, int> to);
 
-        string get_state(int arg_player_turn, int additional_depth);
+        string get_state(int arg_player_turn, int additional_depth, int extensions_performed);
 
         void save_calculated_moves(string file);
 
@@ -1322,16 +1326,18 @@ void Board::draw(){
 
 }
 
-enum winner Board::next_turn(int additional_depth){
+enum winner Board::next_turn(bool original_call, int brute_force_depth, int material_extensions_left){
 
     int player = player_turn;
     player_turn = !player_turn;
 
     vector< pair< pair<int, int> , pair<int, int> > > best_moves = {};
 
+#if REMEMBER_MOVES
+
     // see if this position has already been calculated before
 
-    string current_state = get_state(player, additional_depth);
+    string current_state = get_state(player, additional_depth, extensions_performed);
 
     shared_lock lock_search(*already_calculated_moves_lock); // lock for reading
 
@@ -1341,11 +1347,14 @@ enum winner Board::next_turn(int additional_depth){
 
     lock_search.unlock();
 
+
     if(move_already_calculated){
 
         best_moves = it->second;
 
-    }else{
+    }else
+#endif
+    {
 
         vector< pair< pair<int, int> , pair<int, int> > > all_valid_moves = {};
 
@@ -1388,19 +1397,40 @@ enum winner Board::next_turn(int additional_depth){
 
             Board * imag_board = duplicate();
 
-            auto fnc_imagine = [imag_board, additional_depth, idx, from, to, player, &move_evaluations]{
+            auto fnc_imagine = [imag_board, brute_force_depth, idx, from, to, player, &move_evaluations, this, material_extensions_left]{
 
                 enum winner imag_winner = imag_board->move_piece_to(from, to);
 
                 if(imag_winner == WINNER_NO_WINNER_YET){
-                    int depth = additional_depth - 1;
-                    if(depth >= 0){
-                        imag_board->next_turn(depth);
-                        // ignoring the return value
+
+                    if(brute_force_depth > 0){
+
+                        imag_winner = imag_board->next_turn(false, brute_force_depth - 1, material_extensions_left);
+
+                    }else if((material_extensions_left > 0) && (imag_board->count_material(player) > this->count_material(player))){
+
+                        imag_winner = imag_board->next_turn(false, brute_force_depth, material_extensions_left - 1);
+
                     }
+
                 }
 
-                int material = imag_board->count_material(player);
+                int material;
+
+                switch(imag_winner){
+                    case WINNER_NO_WINNER_YET:
+                        material = imag_board->count_material(player);
+                        break;
+                    case WINNER_PLAYER_0:
+                        material = -500 + (player == 0) * 1000;
+                        break;
+                    case WINNER_PLAYER_1:
+                        material = -500 + (player == 1) * 1000;
+                        break;
+                    case WINNER_STALEMATE:
+                        material = 0;
+                        break;
+                }
 
                 move_evaluations.at(idx) = {material, from, to};
 
@@ -1408,7 +1438,7 @@ enum winner Board::next_turn(int additional_depth){
 
             };
 
-            if(additional_depth == BOT_BRUTE_FORCE_DEPTH){
+            if(original_call){
 
                 thread thr(fnc_imagine);
 
@@ -1449,11 +1479,13 @@ enum winner Board::next_turn(int additional_depth){
 
             assert(best_move_material != INT_MIN);
 
+#if REMEMBER_MOVES
             unique_lock lock_add(*already_calculated_moves_lock); // lock for writing
 
             (*already_calculated_moves)[current_state] = best_moves;
 
             lock_add.unlock();
+#endif
 
         }
 
@@ -1539,17 +1571,18 @@ enum winner Board::move_piece_to(pair<int, int> from, pair<int, int> to){
 
 }
 
-string Board::get_state(int arg_player_turn, int additional_depth){
+string Board::get_state(int arg_player_turn, int additional_depth, int extensions_performed){
 
     string state = "";
 
-    assert(arg_player_turn <= 50);
-    char player_turn_as_char = '0' + static_cast<char>(arg_player_turn);
-    state += player_turn_as_char;
+    assert(arg_player_turn <= 100);
+    state += static_cast<char>(arg_player_turn);
 
-    assert(additional_depth <= 50);
-    char depth_as_char = '0' + static_cast<char>(additional_depth);
-    state += depth_as_char;
+    assert(additional_depth <= 100);
+    state += static_cast<char>(additional_depth);
+
+    assert(extensions_performed <= 50);
+    state += static_cast<char>(extensions_performed);
 
     unsigned char repr = 0;
     bool repr_full = false;
@@ -1569,7 +1602,7 @@ string Board::get_state(int arg_player_turn, int additional_depth){
         repr |= rep;
 
         if(repr_full){
-            state += repr;
+            state += * reinterpret_cast<char*>(&repr);
         }else{
             repr = rep << 4;
         }
@@ -1859,7 +1892,7 @@ int main(){
 
         if(command == "b"){
 
-            winner = board->next_turn(BOT_BRUTE_FORCE_DEPTH);
+            winner = board->next_turn(true, BOT_BRUTE_FORCE_DEPTH, BOT_MAX_NUMBER_OF_MATERIAL_EXTENSIONS);
 
             if(rand() <= SAVE_CHANCE){
                 cout << "Saving moves db..." << endl;
@@ -1898,19 +1931,25 @@ int main(){
 
                 auto [tile_fail, tile] = board->get_tile_at(from);
                 if(tile_fail){
-                    cout << "try again: there is no such tile" << endl;
-                    continue;
+                    cout << "there is no such tile" << endl;
+                    cout << "press enter" << endl;
+                    input_enter();
+                    break;
                 }
 
                 Piece * piece = tile->piece;
                 if(!piece){
-                    cout << "try again: there is no piece on this tile" << endl;
-                    continue;
+                    cout << "there is no piece on this tile" << endl;
+                    cout << "press enter" << endl;
+                    input_enter();
+                    break;
                 }
 
                 if(piece->owner != board->player_turn){
-                    cout << "try again: piece is not controlled by the current player" << endl;
-                    continue;
+                    cout << "piece is not controlled by the current player" << endl;
+                    cout << "press enter" << endl;
+                    input_enter();
+                    break;
                 }
 
                 bool move_is_valid = false;
@@ -1925,8 +1964,10 @@ int main(){
                 }
 
                 if(!move_is_valid){
-                    cout << "try again: not a valid move" << endl;
-                    continue;
+                    cout << "invalid move" << endl;
+                    cout << "press enter" << endl;
+                    input_enter();
+                    break;
                 }
 
                 winner = board->move_piece_to(from, to);
