@@ -3,7 +3,7 @@
 //
 // implementing stealmate by repeating turns
 //
-// rokada
+// rokade doesn't move the rook
 //
 // we could further reduce the board representations
 
@@ -115,7 +115,7 @@ using namespace std;
 
 ///
 //////
-/////////// enum
+/////////// enum + typedef
 //////
 ///
 
@@ -135,6 +135,8 @@ enum winner{
     WINNER_STALEMATE,
 };
 
+typedef pair<int, int> board_pos_t;
+
 ///
 //////
 /////////// declaration
@@ -151,7 +153,7 @@ class Board{
 
         int player_turn = 0; // which player's turn is it
 
-        unordered_map< string , vector< pair< pair<int, int> , pair<int,int> > > > * already_calculated_moves = nullptr;
+        unordered_map< string , vector< pair< board_pos_t , board_pos_t > > > * already_calculated_moves = nullptr;
         shared_mutex * already_calculated_moves_lock = nullptr;
 
         // Board();
@@ -168,9 +170,9 @@ class Board{
 
         int count_material(int for_player);
 
-        pair<bool, Tile *> get_tile_at(pair<int, int> pos);
+        pair<bool, Tile *> get_tile_at(board_pos_t pos);
 
-        enum winner move_piece_to(pair<int, int> from, pair<int, int> to);
+        enum winner move_piece_to(board_pos_t from, board_pos_t to);
 
         string get_state(int arg_player_turn, int additional_depth, int extensions_performed);
 
@@ -178,7 +180,7 @@ class Board{
 
         void load_calculated_moves(string file);
 
-        pair<int, int> terminal_position_to_board_position(pair<int, int> term_pos);
+        board_pos_t terminal_position_to_board_position(pair<int, int> term_pos);
 
     private:
 
@@ -210,11 +212,11 @@ class Piece{
 
         Piece * duplicate(Tile * arg_location);
 
-        vector<pair<int, int>> get_valid_moves();
+        vector<board_pos_t> get_valid_moves();
 
-        enum winner move_to(Board * board, pair<int, int> pos);
+        enum winner move_to(Board * board, board_pos_t pos);
 
-        pair<int, int> get_pos();
+        board_pos_t get_pos();
 
         void draw();
 
@@ -222,15 +224,15 @@ class Piece{
 
     private:
 
-        vector<pair<int, int>> gen_valid_moves_pawn();
+        vector<board_pos_t> gen_valid_moves_pawn();
 
-        vector<pair<int, int>> gen_valid_moves_knight();
+        vector<board_pos_t> gen_valid_moves_knight();
 
-        vector<pair<int, int>> gen_valid_moves_bishop();
+        vector<board_pos_t> gen_valid_moves_bishop();
 
-        vector<pair<int, int>> gen_valid_moves_rook();
+        vector<board_pos_t> gen_valid_moves_rook();
 
-        vector<pair<int, int>> gen_valid_moves_king();
+        vector<board_pos_t> gen_valid_moves_king();
 
 };
 
@@ -256,7 +258,7 @@ class Tile{
 
         Tile * duplicate();
 
-        pair<int, int> get_pos();
+        board_pos_t get_pos();
 
 };
 
@@ -352,7 +354,7 @@ int input_int(){
     return stoi(data); // this CAN crash
 }
 
-pair<int, int> input_chess_pos(string prompt){
+board_pos_t input_chess_pos(string prompt){
 
     while(true){
 
@@ -534,32 +536,32 @@ void file_write_string(ofstream & f, const string & data){
     assert(!f.fail());
 }
 
-void file_write_pair_int(ofstream & f, pair<int, int> & data){
+void file_write_boardpos(ofstream & f, board_pos_t & data){
     f.write(reinterpret_cast<char *>(&data.first), sizeof(int));
     assert(!f.fail());
     f.write(reinterpret_cast<char *>(&data.second), sizeof(int));
     assert(!f.fail());
 }
 
-void file_write__vector__pair__pair_int__pair_int(ofstream & f, vector< pair< pair<int,int> , pair<int,int> > > & data){
+void file_write__vector__pair_boardpos_boardpos(ofstream & f, vector< pair< board_pos_t , board_pos_t > > & data){
     file_write_size(f, data.size());
 
-    for(auto [pair0, pair1] : data){
-        file_write_pair_int(f, pair0);
+    for(auto [pos0, pos1] : data){
+        file_write_boardpos(f, pos0);
         assert(!f.fail());
 
-        file_write_pair_int(f, pair1);
+        file_write_boardpos(f, pos1);
         assert(!f.fail());
     }
 }
 
-void file_write___unsortedmap___string___vector__pair__pair_int__pair_int(ofstream & f, unordered_map< string , vector< pair< pair<int, int> , pair<int,int> > > > * data){
+void file_write___unsortedmap___string___vector__pair_boardpos_boardpos(ofstream & f, unordered_map< string , vector< pair< board_pos_t , board_pos_t > > > * data){
 
     file_write_size(f, data->size());
 
     for(auto it = data->begin(); it != data->end(); ++it){
         file_write_string(f, it->first);
-        file_write__vector__pair__pair_int__pair_int(f, it->second);
+        file_write__vector__pair_boardpos_boardpos(f, it->second);
     }
 }
 
@@ -584,7 +586,7 @@ void file_read_string(ifstream & f, string & data){
     data = data_cstr;
 }
 
-void file_read_pair_int(ifstream & f, pair<int, int> & data){
+void file_read_boardpos(ifstream & f, board_pos_t & data){
     f.read(reinterpret_cast<char *>(&data.first), sizeof(int));
     assert(f.gcount() == sizeof(int));
 
@@ -592,22 +594,22 @@ void file_read_pair_int(ifstream & f, pair<int, int> & data){
     assert(f.gcount() == sizeof(int));
 }
 
-void file_read__vector__pair__pair_int__pair_int(ifstream & f, vector< pair< pair<int,int> , pair<int,int> > > & data){
+void file_read__vector__pair_boardpos_boardpos(ifstream & f, vector< pair< board_pos_t , board_pos_t > > & data){
     size_t size = 0;
     file_read_size(f, size);
 
     for(size_t i=0; i<size; ++i){
-        pair<int, int> pair0 = {};
-        pair<int, int> pair1 = {};
+        board_pos_t pair0 = {};
+        board_pos_t pair1 = {};
 
-        file_read_pair_int(f, pair0);
-        file_read_pair_int(f, pair1);
+        file_read_boardpos(f, pair0);
+        file_read_boardpos(f, pair1);
 
         data.push_back({pair0, pair1});
     }
 }
 
-void file_read___unsortedmap___string___vector__pair__pair_int__pair_int(ifstream & f, unordered_map< string , vector< pair< pair<int, int> , pair<int,int> > > > * data){
+void file_read___unsortedmap___string___vector__pair_boardpos_boardpos(ifstream & f, unordered_map< string , vector< pair< board_pos_t , board_pos_t > > > * data){
     size_t size = 0;
     file_read_size(f, size);
 
@@ -615,8 +617,8 @@ void file_read___unsortedmap___string___vector__pair__pair_int__pair_int(ifstrea
         string key = {};
         file_read_string(f, key);
 
-        vector< pair< pair<int, int> , pair<int,int> > > value = {};
-        file_read__vector__pair__pair_int__pair_int(f, value);
+        vector< pair< board_pos_t , board_pos_t > > value = {};
+        file_read__vector__pair_boardpos_boardpos(f, value);
 
         (*data)[key] = value;
     }
@@ -671,9 +673,9 @@ Piece * Piece::duplicate(Tile * arg_location){
 
 }
 
-vector<pair<int, int>> Piece::get_valid_moves(){
+vector<board_pos_t> Piece::get_valid_moves(){
 
-    vector<pair<int, int>> moves = {};
+    vector<board_pos_t> moves = {};
 
     switch(type){
 
@@ -695,7 +697,7 @@ vector<pair<int, int>> Piece::get_valid_moves(){
 
         case PT_QUEEN:{
             moves = gen_valid_moves_bishop();
-            for(pair<int, int> rook_move : gen_valid_moves_rook()){
+            for(board_pos_t rook_move : gen_valid_moves_rook()){
                 moves.push_back(rook_move);
             }
         }break;
@@ -710,7 +712,7 @@ vector<pair<int, int>> Piece::get_valid_moves(){
 
 }
 
-enum winner Piece::move_to(Board * board, pair<int, int> pos){
+enum winner Piece::move_to(Board * board, board_pos_t pos){
 
     auto [tile_fail, tile] = board->get_tile_at(pos);
     assert(!tile_fail);
@@ -749,7 +751,7 @@ enum winner Piece::move_to(Board * board, pair<int, int> pos){
 
 }
 
-pair<int, int> Piece::get_pos(){
+board_pos_t Piece::get_pos(){
 
     return location->get_pos();
 
@@ -833,9 +835,9 @@ unsigned char Piece::get_representation(){
 
 // private
 
-vector<pair<int, int>> Piece::gen_valid_moves_pawn(){
+vector<board_pos_t> Piece::gen_valid_moves_pawn(){
 
-    vector<pair<int, int>> moves = {};
+    vector<board_pos_t> moves = {};
 
     if(forward_y == -1){
 
@@ -895,9 +897,9 @@ vector<pair<int, int>> Piece::gen_valid_moves_pawn(){
 
 }
 
-vector<pair<int, int>> Piece::gen_valid_moves_knight(){
+vector<board_pos_t> Piece::gen_valid_moves_knight(){
 
-    vector<pair<int, int>> moves = {};
+    vector<board_pos_t> moves = {};
 
     // TODO in the 4way chess map this won't be sufficient
 
@@ -969,9 +971,9 @@ vector<pair<int, int>> Piece::gen_valid_moves_knight(){
 
 }
 
-vector<pair<int, int>> Piece::gen_valid_moves_bishop(){
+vector<board_pos_t> Piece::gen_valid_moves_bishop(){
 
-    vector<pair<int, int>> moves = {};
+    vector<board_pos_t> moves = {};
 
     {
         Tile * pos = location;
@@ -1061,9 +1063,9 @@ vector<pair<int, int>> Piece::gen_valid_moves_bishop(){
 
 }
 
-vector<pair<int, int>> Piece::gen_valid_moves_rook(){
+vector<board_pos_t> Piece::gen_valid_moves_rook(){
 
-    vector<pair<int, int>> moves = {};
+    vector<board_pos_t> moves = {};
 
     {
         Tile * pos = location;
@@ -1153,9 +1155,9 @@ vector<pair<int, int>> Piece::gen_valid_moves_rook(){
 
 }
 
-vector<pair<int, int>> Piece::gen_valid_moves_king(){
+vector<board_pos_t> Piece::gen_valid_moves_king(){
 
-    vector<pair<int, int>> moves = {};
+    vector<board_pos_t> moves = {};
 
     if(location->neighbour_up && (!location->neighbour_up->piece || location->neighbour_up->piece->owner != owner)){
         moves.push_back(location->neighbour_up->get_pos());
@@ -1189,6 +1191,44 @@ vector<pair<int, int>> Piece::gen_valid_moves_king(){
         moves.push_back(location->neighbour_upleft->get_pos());
     }
 
+    if(has_not_moved){
+        if(location->neighbour_left && !location->neighbour_left->piece){
+            if(location->neighbour_left->neighbour_left && !location->neighbour_left->neighbour_left->piece){
+                if(location->neighbour_left->neighbour_left->neighbour_left && !location->neighbour_left->neighbour_left->neighbour_left->piece){
+                    if(location->neighbour_left->neighbour_left->neighbour_left->neighbour_left){
+                        if(location->neighbour_left->neighbour_left->neighbour_left->neighbour_left->piece){
+                            if(location->neighbour_left->neighbour_left->neighbour_left->neighbour_left->piece->type == PT_ROOK){
+                                if(location->neighbour_left->neighbour_left->neighbour_left->neighbour_left->piece->owner == owner){
+                                    if(location->neighbour_left->neighbour_left->neighbour_left->neighbour_left->piece->has_not_moved){
+                                        moves.push_back(location->neighbour_left->neighbour_left->get_pos());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if(location->neighbour_right && !location->neighbour_right->piece){
+            if(location->neighbour_right->neighbour_right && !location->neighbour_right->neighbour_right->piece){
+                if(location->neighbour_right->neighbour_right->neighbour_right){
+                    if(location->neighbour_right->neighbour_right->neighbour_right->piece){
+                        if(location->neighbour_right->neighbour_right->neighbour_right->piece->type == PT_ROOK){
+                            if(location->neighbour_right->neighbour_right->neighbour_right->piece->owner == owner){
+                                if(location->neighbour_right->neighbour_right->neighbour_right->piece->has_not_moved){
+                                    moves.push_back(location->neighbour_right->neighbour_right->get_pos());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+
     return moves;
 
 }
@@ -1216,7 +1256,7 @@ Tile * Tile::duplicate(){
 
 }
 
-pair<int, int> Tile::get_pos(){
+board_pos_t Tile::get_pos(){
 
     return {y, x};
 
@@ -1248,7 +1288,7 @@ Board::~Board(){
 
 void Board::init(){
 
-    already_calculated_moves = new unordered_map< string , vector< pair< pair<int, int> , pair<int,int> > > > ();
+    already_calculated_moves = new unordered_map< string , vector< pair< board_pos_t , board_pos_t > > > ();
     already_calculated_moves_lock = new shared_mutex ();
 
     spawn_tiles();
@@ -1331,7 +1371,7 @@ enum winner Board::next_turn(bool original_call, int brute_force_depth, int mate
     int player = player_turn;
     player_turn = !player_turn;
 
-    vector< pair< pair<int, int> , pair<int, int> > > best_moves = {};
+    vector< pair< board_pos_t , board_pos_t > > best_moves = {};
 
 #if REMEMBER_MOVES
 
@@ -1356,7 +1396,7 @@ enum winner Board::next_turn(bool original_call, int brute_force_depth, int mate
 #endif
     {
 
-        vector< pair< pair<int, int> , pair<int, int> > > all_valid_moves = {};
+        vector< pair< board_pos_t , board_pos_t > > all_valid_moves = {};
 
         for(Tile * tile : tiles){
 
@@ -1369,15 +1409,15 @@ enum winner Board::next_turn(bool original_call, int brute_force_depth, int mate
                 continue;
             }
 
-            vector<pair<int, int>> valid_moves = piece->get_valid_moves();
+            vector<board_pos_t> valid_moves = piece->get_valid_moves();
 
             if(valid_moves.size() <= 0){
                 continue;
             }
 
-            pair<int, int> piece_pos = piece->get_pos();
+            board_pos_t piece_pos = piece->get_pos();
 
-            for(pair<int, int> move : valid_moves){
+            for(board_pos_t move : valid_moves){
                 all_valid_moves.push_back({piece_pos, move});
             }
 
@@ -1387,7 +1427,7 @@ enum winner Board::next_turn(bool original_call, int brute_force_depth, int mate
             return WINNER_STALEMATE;
         }
 
-        vector< tuple< int , pair<int,int> , pair<int,int> > > move_evaluations (all_valid_moves.size());
+        vector< tuple< int , board_pos_t , board_pos_t > > move_evaluations (all_valid_moves.size());
 
         vector<thread> threads = {};
 
@@ -1548,7 +1588,7 @@ int Board::count_material(int for_player){
     return count;
 }
 
-pair<bool, Tile *> Board::get_tile_at(pair<int, int> pos){
+pair<bool, Tile *> Board::get_tile_at(board_pos_t pos){
 
     auto [fail_ci, idx] = calc_idx(pos.first, pos.second);
     if(fail_ci){
@@ -1559,7 +1599,7 @@ pair<bool, Tile *> Board::get_tile_at(pair<int, int> pos){
 
 }
 
-enum winner Board::move_piece_to(pair<int, int> from, pair<int, int> to){
+enum winner Board::move_piece_to(board_pos_t from, board_pos_t to){
 
     auto [tile_from_fail, tile_from] = get_tile_at(from);
     assert(!tile_from_fail);
@@ -1665,7 +1705,7 @@ void Board::load_calculated_moves(string file){
 
 }
 
-pair<int, int> Board::terminal_position_to_board_position(pair<int, int> term_pos){
+board_pos_t Board::terminal_position_to_board_position(pair<int, int> term_pos){
 
     {
         term_pos.first -= 1;
@@ -1904,8 +1944,8 @@ int main(){
 
             while(true){
 
-                pair<int, int> from = {};
-                pair<int, int> to = {};
+                board_pos_t from = {};
+                board_pos_t to = {};
 
                 if(command == "h"){
 
@@ -1954,9 +1994,9 @@ int main(){
 
                 bool move_is_valid = false;
 
-                vector<pair<int, int>> valid_moves = piece->get_valid_moves();
+                vector<board_pos_t> valid_moves = piece->get_valid_moves();
 
-                for(pair<int, int> valid_move : valid_moves){
+                for(board_pos_t valid_move : valid_moves){
                     if((valid_move.first == to.first) && (valid_move.second == to.second)){
                         move_is_valid = true;
                         break;
@@ -1976,12 +2016,6 @@ int main(){
                 break;
 
             }
-
-        }else if(command == "c"){
-
-            pair<int, int> click = input_mouse_click();
-            DBG("click: " << click.first << " " << click.second);
-            input_enter();
 
         }else if(command == "auto"){
 
