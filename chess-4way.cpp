@@ -1196,6 +1196,9 @@ vector<board_move_t> Piece::gen_valid_moves_king(){
     }
 
     if(has_not_moved){
+
+        // TODO I think you're not allowed to do this if you're under check
+
         if(location->neighbour_left && !location->neighbour_left->piece){
             if(location->neighbour_left->neighbour_left && !location->neighbour_left->neighbour_left->piece){
                 if(location->neighbour_left->neighbour_left->neighbour_left && !location->neighbour_left->neighbour_left->neighbour_left->piece){
@@ -1235,6 +1238,7 @@ vector<board_move_t> Piece::gen_valid_moves_king(){
                 }
             }
         }
+
     }
 
 
