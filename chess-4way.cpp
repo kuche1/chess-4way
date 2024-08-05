@@ -905,65 +905,67 @@ vector<board_move_t> Piece::gen_valid_moves_knight(){
 
     // TODO in the 4way chess map this won't be sufficient
 
-    if(location->neighbour_up){
+    Tile * loc;
 
-        if(location->neighbour_up->neighbour_upleft){
-            if(!location->neighbour_up->neighbour_upleft->piece || (location->neighbour_up->neighbour_upleft->piece->owner != owner)){
-                moves.push_back({{get_pos(), location->neighbour_up->neighbour_upleft->get_pos()}});
+    if((loc = location->neighbour_up)){
+
+        if(loc->neighbour_upleft){
+            if(!loc->neighbour_upleft->piece || (loc->neighbour_upleft->piece->owner != owner)){
+                moves.push_back({{get_pos(), loc->neighbour_upleft->get_pos()}});
             }
         }
 
-        if(location->neighbour_up->neighbour_upright){
-            if(!location->neighbour_up->neighbour_upright->piece || (location->neighbour_up->neighbour_upright->piece->owner != owner)){
-                moves.push_back({{get_pos(), location->neighbour_up->neighbour_upright->get_pos()}});
-            }
-        }
-
-    }
-
-    if(location->neighbour_down){
-
-        if(location->neighbour_down->neighbour_downleft){
-            if(!location->neighbour_down->neighbour_downleft->piece || (location->neighbour_down->neighbour_downleft->piece->owner != owner)){
-                moves.push_back({{get_pos(), location->neighbour_down->neighbour_downleft->get_pos()}});
-            }
-        }
-
-        if(location->neighbour_down->neighbour_downright){
-            if(!location->neighbour_down->neighbour_downright->piece || (location->neighbour_down->neighbour_downright->piece->owner != owner)){
-                moves.push_back({{get_pos(), location->neighbour_down->neighbour_downright->get_pos()}});
+        if(loc->neighbour_upright){
+            if(!loc->neighbour_upright->piece || (loc->neighbour_upright->piece->owner != owner)){
+                moves.push_back({{get_pos(), loc->neighbour_upright->get_pos()}});
             }
         }
 
     }
 
-    if(location->neighbour_left){
+    if((loc = location->neighbour_down)){
 
-        if(location->neighbour_left->neighbour_upleft){
-            if(!location->neighbour_left->neighbour_upleft->piece || (location->neighbour_left->neighbour_upleft->piece->owner != owner)){
-                moves.push_back({{get_pos(), location->neighbour_left->neighbour_upleft->get_pos()}});
+        if(loc->neighbour_downleft){
+            if(!loc->neighbour_downleft->piece || (loc->neighbour_downleft->piece->owner != owner)){
+                moves.push_back({{get_pos(), loc->neighbour_downleft->get_pos()}});
             }
         }
 
-        if(location->neighbour_left->neighbour_downleft){
-            if(!location->neighbour_left->neighbour_downleft->piece || (location->neighbour_left->neighbour_downleft->piece->owner != owner)){
-                moves.push_back({{get_pos(), location->neighbour_left->neighbour_downleft->get_pos()}});
+        if(loc->neighbour_downright){
+            if(!loc->neighbour_downright->piece || (loc->neighbour_downright->piece->owner != owner)){
+                moves.push_back({{get_pos(), loc->neighbour_downright->get_pos()}});
             }
         }
 
     }
 
-    if(location->neighbour_right){
+    if((loc = location->neighbour_left)){
 
-        if(location->neighbour_right->neighbour_upright){
-            if(!location->neighbour_right->neighbour_upright->piece || (location->neighbour_right->neighbour_upright->piece->owner != owner)){
-                moves.push_back({{get_pos(), location->neighbour_right->neighbour_upright->get_pos()}});
+        if(loc->neighbour_upleft){
+            if(!loc->neighbour_upleft->piece || (loc->neighbour_upleft->piece->owner != owner)){
+                moves.push_back({{get_pos(), loc->neighbour_upleft->get_pos()}});
             }
         }
 
-        if(location->neighbour_right->neighbour_downright){
-            if(!location->neighbour_right->neighbour_downright->piece || (location->neighbour_right->neighbour_downright->piece->owner != owner)){
-                moves.push_back({{get_pos(), location->neighbour_right->neighbour_downright->get_pos()}});
+        if(loc->neighbour_downleft){
+            if(!loc->neighbour_downleft->piece || (loc->neighbour_downleft->piece->owner != owner)){
+                moves.push_back({{get_pos(), loc->neighbour_downleft->get_pos()}});
+            }
+        }
+
+    }
+
+    if((loc = location->neighbour_right)){
+
+        if(loc->neighbour_upright){
+            if(!loc->neighbour_upright->piece || (loc->neighbour_upright->piece->owner != owner)){
+                moves.push_back({{get_pos(), loc->neighbour_upright->get_pos()}});
+            }
+        }
+
+        if(loc->neighbour_downright){
+            if(!loc->neighbour_downright->piece || (loc->neighbour_downright->piece->owner != owner)){
+                moves.push_back({{get_pos(), loc->neighbour_downright->get_pos()}});
             }
         }
 
