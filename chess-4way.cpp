@@ -6,6 +6,8 @@
 // rokade doesn't move the rook
 //
 // we could further reduce the board representations
+//
+// items on board are hard to click
 
 ///
 //////
@@ -139,7 +141,7 @@ typedef pair<int, int> board_pos_t;
 
 typedef pair<board_pos_t, board_pos_t> board_move_simple_t;
 
-// typedef vector<board_move_simple_t> board_move_t;
+typedef vector<board_move_simple_t> board_move_t;
 
 ///
 //////
@@ -176,7 +178,7 @@ class Board{
 
         pair<bool, Tile *> get_tile_at(board_pos_t pos);
 
-        enum winner move_piece_to(board_pos_t from, board_pos_t to);
+        enum winner make_move(board_move_t move);
 
         string get_state(int arg_player_turn, int additional_depth, int extensions_performed);
 
@@ -216,7 +218,7 @@ class Piece{
 
         Piece * duplicate(Tile * arg_location);
 
-        vector<board_move_simple_t> get_valid_moves();
+        vector<board_move_t> get_valid_moves();
 
         enum winner move_to(Board * board, board_pos_t pos);
 
@@ -228,15 +230,15 @@ class Piece{
 
     private:
 
-        vector<board_move_simple_t> gen_valid_moves_pawn();
+        vector<board_move_t> gen_valid_moves_pawn();
 
-        vector<board_move_simple_t> gen_valid_moves_knight();
+        vector<board_move_t> gen_valid_moves_knight();
 
-        vector<board_move_simple_t> gen_valid_moves_bishop();
+        vector<board_move_t> gen_valid_moves_bishop();
 
-        vector<board_move_simple_t> gen_valid_moves_rook();
+        vector<board_move_t> gen_valid_moves_rook();
 
-        vector<board_move_simple_t> gen_valid_moves_king();
+        vector<board_move_t> gen_valid_moves_king();
 
 };
 
@@ -677,9 +679,9 @@ Piece * Piece::duplicate(Tile * arg_location){
 
 }
 
-vector<board_move_simple_t> Piece::get_valid_moves(){
+vector<board_move_t> Piece::get_valid_moves(){
 
-    vector<board_move_simple_t> moves = {};
+    vector<board_move_t> moves = {};
 
     switch(type){
 
@@ -701,7 +703,7 @@ vector<board_move_simple_t> Piece::get_valid_moves(){
 
         case PT_QUEEN:{
             moves = gen_valid_moves_bishop();
-            for(board_move_simple_t rook_move : gen_valid_moves_rook()){
+            for(board_move_t rook_move : gen_valid_moves_rook()){
                 moves.push_back(rook_move);
             }
         }break;
@@ -839,30 +841,30 @@ unsigned char Piece::get_representation(){
 
 // private
 
-vector<board_move_simple_t> Piece::gen_valid_moves_pawn(){
+vector<board_move_t> Piece::gen_valid_moves_pawn(){
 
-    vector<board_move_simple_t> moves = {};
+    vector<board_move_t> moves = {};
 
     if(forward_y == -1){
 
         if(location->neighbour_up && !location->neighbour_up->piece){
 
-            moves.push_back({get_pos(), location->neighbour_up->get_pos()});
+            moves.push_back({{get_pos(), location->neighbour_up->get_pos()}});
 
             if(has_not_moved && location->neighbour_up->neighbour_up && !location->neighbour_up->neighbour_up->piece){
 
-                moves.push_back({get_pos(), location->neighbour_up->neighbour_up->get_pos()});
+                moves.push_back({{get_pos(), location->neighbour_up->neighbour_up->get_pos()}});
 
             }
 
         }
 
         if(location->neighbour_upleft && (location->neighbour_upleft->piece && location->neighbour_upleft->piece->owner != owner)){
-            moves.push_back({get_pos(), location->neighbour_upleft->get_pos()});
+            moves.push_back({{get_pos(), location->neighbour_upleft->get_pos()}});
         }
 
         if(location->neighbour_upright && (location->neighbour_upright->piece && location->neighbour_upright->piece->owner != owner)){
-            moves.push_back({get_pos(), location->neighbour_upright->get_pos()});
+            moves.push_back({{get_pos(), location->neighbour_upright->get_pos()}});
         }
 
         // TODO en passant
@@ -871,22 +873,22 @@ vector<board_move_simple_t> Piece::gen_valid_moves_pawn(){
 
         if(location->neighbour_down && !location->neighbour_down->piece){
 
-            moves.push_back({get_pos(), location->neighbour_down->get_pos()});
+            moves.push_back({{get_pos(), location->neighbour_down->get_pos()}});
 
             if(has_not_moved && location->neighbour_down->neighbour_down && !location->neighbour_down->neighbour_down->piece){
 
-                moves.push_back({get_pos(), location->neighbour_down->neighbour_down->get_pos()});
+                moves.push_back({{get_pos(), location->neighbour_down->neighbour_down->get_pos()}});
 
             }
 
         }
 
         if(location->neighbour_downleft && (location->neighbour_downleft->piece && location->neighbour_downleft->piece->owner != owner)){
-            moves.push_back({get_pos(), location->neighbour_downleft->get_pos()});
+            moves.push_back({{get_pos(), location->neighbour_downleft->get_pos()}});
         }
 
         if(location->neighbour_downright && (location->neighbour_downright->piece && location->neighbour_downright->piece->owner != owner)){
-            moves.push_back({get_pos(), location->neighbour_downright->get_pos()});
+            moves.push_back({{get_pos(), location->neighbour_downright->get_pos()}});
         }
 
         // TODO en passant
@@ -901,9 +903,9 @@ vector<board_move_simple_t> Piece::gen_valid_moves_pawn(){
 
 }
 
-vector<board_move_simple_t> Piece::gen_valid_moves_knight(){
+vector<board_move_t> Piece::gen_valid_moves_knight(){
 
-    vector<board_move_simple_t> moves = {};
+    vector<board_move_t> moves = {};
 
     // TODO in the 4way chess map this won't be sufficient
 
@@ -911,13 +913,13 @@ vector<board_move_simple_t> Piece::gen_valid_moves_knight(){
 
         if(location->neighbour_up->neighbour_upleft){
             if(!location->neighbour_up->neighbour_upleft->piece || (location->neighbour_up->neighbour_upleft->piece->owner != owner)){
-                moves.push_back({get_pos(), location->neighbour_up->neighbour_upleft->get_pos()});
+                moves.push_back({{get_pos(), location->neighbour_up->neighbour_upleft->get_pos()}});
             }
         }
 
         if(location->neighbour_up->neighbour_upright){
             if(!location->neighbour_up->neighbour_upright->piece || (location->neighbour_up->neighbour_upright->piece->owner != owner)){
-                moves.push_back({get_pos(), location->neighbour_up->neighbour_upright->get_pos()});
+                moves.push_back({{get_pos(), location->neighbour_up->neighbour_upright->get_pos()}});
             }
         }
 
@@ -927,13 +929,13 @@ vector<board_move_simple_t> Piece::gen_valid_moves_knight(){
 
         if(location->neighbour_down->neighbour_downleft){
             if(!location->neighbour_down->neighbour_downleft->piece || (location->neighbour_down->neighbour_downleft->piece->owner != owner)){
-                moves.push_back({get_pos(), location->neighbour_down->neighbour_downleft->get_pos()});
+                moves.push_back({{get_pos(), location->neighbour_down->neighbour_downleft->get_pos()}});
             }
         }
 
         if(location->neighbour_down->neighbour_downright){
             if(!location->neighbour_down->neighbour_downright->piece || (location->neighbour_down->neighbour_downright->piece->owner != owner)){
-                moves.push_back({get_pos(), location->neighbour_down->neighbour_downright->get_pos()});
+                moves.push_back({{get_pos(), location->neighbour_down->neighbour_downright->get_pos()}});
             }
         }
 
@@ -943,13 +945,13 @@ vector<board_move_simple_t> Piece::gen_valid_moves_knight(){
 
         if(location->neighbour_left->neighbour_upleft){
             if(!location->neighbour_left->neighbour_upleft->piece || (location->neighbour_left->neighbour_upleft->piece->owner != owner)){
-                moves.push_back({get_pos(), location->neighbour_left->neighbour_upleft->get_pos()});
+                moves.push_back({{get_pos(), location->neighbour_left->neighbour_upleft->get_pos()}});
             }
         }
 
         if(location->neighbour_left->neighbour_downleft){
             if(!location->neighbour_left->neighbour_downleft->piece || (location->neighbour_left->neighbour_downleft->piece->owner != owner)){
-                moves.push_back({get_pos(), location->neighbour_left->neighbour_downleft->get_pos()});
+                moves.push_back({{get_pos(), location->neighbour_left->neighbour_downleft->get_pos()}});
             }
         }
 
@@ -959,13 +961,13 @@ vector<board_move_simple_t> Piece::gen_valid_moves_knight(){
 
         if(location->neighbour_right->neighbour_upright){
             if(!location->neighbour_right->neighbour_upright->piece || (location->neighbour_right->neighbour_upright->piece->owner != owner)){
-                moves.push_back({get_pos(), location->neighbour_right->neighbour_upright->get_pos()});
+                moves.push_back({{get_pos(), location->neighbour_right->neighbour_upright->get_pos()}});
             }
         }
 
         if(location->neighbour_right->neighbour_downright){
             if(!location->neighbour_right->neighbour_downright->piece || (location->neighbour_right->neighbour_downright->piece->owner != owner)){
-                moves.push_back({get_pos(), location->neighbour_right->neighbour_downright->get_pos()});
+                moves.push_back({{get_pos(), location->neighbour_right->neighbour_downright->get_pos()}});
             }
         }
 
@@ -975,9 +977,9 @@ vector<board_move_simple_t> Piece::gen_valid_moves_knight(){
 
 }
 
-vector<board_move_simple_t> Piece::gen_valid_moves_bishop(){
+vector<board_move_t> Piece::gen_valid_moves_bishop(){
 
-    vector<board_move_simple_t> moves = {};
+    vector<board_move_t> moves = {};
 
     {
         Tile * pos = location;
@@ -990,12 +992,12 @@ vector<board_move_simple_t> Piece::gen_valid_moves_bishop(){
 
             if(pos->piece){
                 if(pos->piece->owner != owner){
-                    moves.push_back({get_pos(), pos->get_pos()});
+                    moves.push_back({{get_pos(), pos->get_pos()}});
                 }
 
                 break;
             }else{
-                moves.push_back({get_pos(), pos->get_pos()});
+                moves.push_back({{get_pos(), pos->get_pos()}});
             }
         }
     }
@@ -1011,12 +1013,12 @@ vector<board_move_simple_t> Piece::gen_valid_moves_bishop(){
 
             if(pos->piece){
                 if(pos->piece->owner != owner){
-                    moves.push_back({get_pos(), pos->get_pos()});
+                    moves.push_back({{get_pos(), pos->get_pos()}});
                 }
 
                 break;
             }else{
-                moves.push_back({get_pos(), pos->get_pos()});
+                moves.push_back({{get_pos(), pos->get_pos()}});
             }
         }
     }
@@ -1032,12 +1034,12 @@ vector<board_move_simple_t> Piece::gen_valid_moves_bishop(){
 
             if(pos->piece){
                 if(pos->piece->owner != owner){
-                    moves.push_back({get_pos(), pos->get_pos()});
+                    moves.push_back({{get_pos(), pos->get_pos()}});
                 }
 
                 break;
             }else{
-                moves.push_back({get_pos(), pos->get_pos()});
+                moves.push_back({{get_pos(), pos->get_pos()}});
             }
         }
     }
@@ -1053,12 +1055,12 @@ vector<board_move_simple_t> Piece::gen_valid_moves_bishop(){
 
             if(pos->piece){
                 if(pos->piece->owner != owner){
-                    moves.push_back({get_pos(), pos->get_pos()});
+                    moves.push_back({{get_pos(), pos->get_pos()}});
                 }
 
                 break;
             }else{
-                moves.push_back({get_pos(), pos->get_pos()});
+                moves.push_back({{get_pos(), pos->get_pos()}});
             }
         }
     }
@@ -1067,9 +1069,9 @@ vector<board_move_simple_t> Piece::gen_valid_moves_bishop(){
 
 }
 
-vector<board_move_simple_t> Piece::gen_valid_moves_rook(){
+vector<board_move_t> Piece::gen_valid_moves_rook(){
 
-    vector<board_move_simple_t> moves = {};
+    vector<board_move_t> moves = {};
 
     {
         Tile * pos = location;
@@ -1082,12 +1084,12 @@ vector<board_move_simple_t> Piece::gen_valid_moves_rook(){
 
             if(pos->piece){
                 if(pos->piece->owner != owner){
-                    moves.push_back({get_pos(), pos->get_pos()});
+                    moves.push_back({{get_pos(), pos->get_pos()}});
                 }
 
                 break;
             }else{
-                moves.push_back({get_pos(), pos->get_pos()});
+                moves.push_back({{get_pos(), pos->get_pos()}});
             }
         }
     }
@@ -1103,12 +1105,12 @@ vector<board_move_simple_t> Piece::gen_valid_moves_rook(){
 
             if(pos->piece){
                 if(pos->piece->owner != owner){
-                    moves.push_back({get_pos(), pos->get_pos()});
+                    moves.push_back({{get_pos(), pos->get_pos()}});
                 }
 
                 break;
             }else{
-                moves.push_back({get_pos(), pos->get_pos()});
+                moves.push_back({{get_pos(), pos->get_pos()}});
             }
         }
     }
@@ -1124,12 +1126,12 @@ vector<board_move_simple_t> Piece::gen_valid_moves_rook(){
 
             if(pos->piece){
                 if(pos->piece->owner != owner){
-                    moves.push_back({get_pos(), pos->get_pos()});
+                    moves.push_back({{get_pos(), pos->get_pos()}});
                 }
 
                 break;
             }else{
-                moves.push_back({get_pos(), pos->get_pos()});
+                moves.push_back({{get_pos(), pos->get_pos()}});
             }
         }
     }
@@ -1145,12 +1147,12 @@ vector<board_move_simple_t> Piece::gen_valid_moves_rook(){
 
             if(pos->piece){
                 if(pos->piece->owner != owner){
-                    moves.push_back({get_pos(), pos->get_pos()});
+                    moves.push_back({{get_pos(), pos->get_pos()}});
                 }
 
                 break;
             }else{
-                moves.push_back({get_pos(), pos->get_pos()});
+                moves.push_back({{get_pos(), pos->get_pos()}});
             }
         }
     }
@@ -1159,40 +1161,40 @@ vector<board_move_simple_t> Piece::gen_valid_moves_rook(){
 
 }
 
-vector<board_move_simple_t> Piece::gen_valid_moves_king(){
+vector<board_move_t> Piece::gen_valid_moves_king(){
 
-    vector<board_move_simple_t> moves = {};
+    vector<board_move_t> moves = {};
 
     if(location->neighbour_up && (!location->neighbour_up->piece || location->neighbour_up->piece->owner != owner)){
-        moves.push_back({get_pos(), location->neighbour_up->get_pos()});
+        moves.push_back({{get_pos(), location->neighbour_up->get_pos()}});
     }
 
     if(location->neighbour_upright && (!location->neighbour_upright->piece || location->neighbour_upright->piece->owner != owner)){
-        moves.push_back({get_pos(), location->neighbour_upright->get_pos()});
+        moves.push_back({{get_pos(), location->neighbour_upright->get_pos()}});
     }
 
     if(location->neighbour_right && (!location->neighbour_right->piece || location->neighbour_right->piece->owner != owner)){
-        moves.push_back({get_pos(), location->neighbour_right->get_pos()});
+        moves.push_back({{get_pos(), location->neighbour_right->get_pos()}});
     }
 
     if(location->neighbour_downright && (!location->neighbour_downright->piece || location->neighbour_downright->piece->owner != owner)){
-        moves.push_back({get_pos(), location->neighbour_downright->get_pos()});
+        moves.push_back({{get_pos(), location->neighbour_downright->get_pos()}});
     }
 
     if(location->neighbour_down && (!location->neighbour_down->piece || location->neighbour_down->piece->owner != owner)){
-        moves.push_back({get_pos(), location->neighbour_down->get_pos()});
+        moves.push_back({{get_pos(), location->neighbour_down->get_pos()}});
     }
 
     if(location->neighbour_downleft && (!location->neighbour_downleft->piece || location->neighbour_downleft->piece->owner != owner)){
-        moves.push_back({get_pos(), location->neighbour_downleft->get_pos()});
+        moves.push_back({{get_pos(), location->neighbour_downleft->get_pos()}});
     }
 
     if(location->neighbour_left && (!location->neighbour_left->piece || location->neighbour_left->piece->owner != owner)){
-        moves.push_back({get_pos(), location->neighbour_left->get_pos()});
+        moves.push_back({{get_pos(), location->neighbour_left->get_pos()}});
     }
 
     if(location->neighbour_upleft && (!location->neighbour_upleft->piece || location->neighbour_upleft->piece->owner != owner)){
-        moves.push_back({get_pos(), location->neighbour_upleft->get_pos()});
+        moves.push_back({{get_pos(), location->neighbour_upleft->get_pos()}});
     }
 
     if(has_not_moved){
@@ -1204,7 +1206,7 @@ vector<board_move_simple_t> Piece::gen_valid_moves_king(){
                             if(location->neighbour_left->neighbour_left->neighbour_left->neighbour_left->piece->type == PT_ROOK){
                                 if(location->neighbour_left->neighbour_left->neighbour_left->neighbour_left->piece->owner == owner){
                                     if(location->neighbour_left->neighbour_left->neighbour_left->neighbour_left->piece->has_not_moved){
-                                        moves.push_back({get_pos(), location->neighbour_left->neighbour_left->get_pos()});
+                                        moves.push_back({{get_pos(), location->neighbour_left->neighbour_left->get_pos()}});
                                     }
                                 }
                             }
@@ -1221,7 +1223,7 @@ vector<board_move_simple_t> Piece::gen_valid_moves_king(){
                         if(location->neighbour_right->neighbour_right->neighbour_right->piece->type == PT_ROOK){
                             if(location->neighbour_right->neighbour_right->neighbour_right->piece->owner == owner){
                                 if(location->neighbour_right->neighbour_right->neighbour_right->piece->has_not_moved){
-                                    moves.push_back({get_pos(), location->neighbour_right->neighbour_right->get_pos()});
+                                    moves.push_back({{get_pos(), location->neighbour_right->neighbour_right->get_pos()}});
                                 }
                             }
                         }
@@ -1375,7 +1377,7 @@ enum winner Board::next_turn(bool original_call, int brute_force_depth, int mate
     int player = player_turn;
     player_turn = !player_turn;
 
-    vector<board_move_simple_t> best_moves = {};
+    vector<board_move_t> best_moves = {};
 
 #if REMEMBER_MOVES
 
@@ -1400,7 +1402,7 @@ enum winner Board::next_turn(bool original_call, int brute_force_depth, int mate
 #endif
     {
 
-        vector<board_move_simple_t> all_valid_moves = {};
+        vector<board_move_t> all_valid_moves = {};
 
         for(Tile * tile : tiles){
 
@@ -1413,13 +1415,13 @@ enum winner Board::next_turn(bool original_call, int brute_force_depth, int mate
                 continue;
             }
 
-            vector<board_move_simple_t> valid_moves = piece->get_valid_moves();
+            vector<board_move_t> valid_moves = piece->get_valid_moves();
 
             if(valid_moves.size() <= 0){
                 continue;
             }
 
-            for(board_move_simple_t move : valid_moves){
+            for(board_move_t move : valid_moves){
                 all_valid_moves.push_back(move);
             }
 
@@ -1429,19 +1431,19 @@ enum winner Board::next_turn(bool original_call, int brute_force_depth, int mate
             return WINNER_STALEMATE;
         }
 
-        vector< tuple< int , board_pos_t , board_pos_t > > move_evaluations (all_valid_moves.size());
+        vector< pair< int , board_move_t > > move_evaluations (all_valid_moves.size());
 
         vector<thread> threads = {};
 
         ssize_t idx = -1;
-        for(auto [from, to] : all_valid_moves){
+        for(auto move : all_valid_moves){
             idx += 1;
 
             Board * imag_board = duplicate();
 
-            auto fnc_imagine = [imag_board, brute_force_depth, idx, from, to, player, &move_evaluations, this, material_extensions_left]{
+            auto fnc_imagine = [imag_board, brute_force_depth, idx, move, player, &move_evaluations, this, material_extensions_left]{
 
-                enum winner imag_winner = imag_board->move_piece_to(from, to);
+                enum winner imag_winner = imag_board->make_move(move);
 
                 if(imag_winner == WINNER_NO_WINNER_YET){
 
@@ -1474,7 +1476,7 @@ enum winner Board::next_turn(bool original_call, int brute_force_depth, int mate
                         break;
                 }
 
-                move_evaluations.at(idx) = {material, from, to};
+                move_evaluations.at(idx) = {material, move};
 
                 delete imag_board;
 
@@ -1482,10 +1484,14 @@ enum winner Board::next_turn(bool original_call, int brute_force_depth, int mate
 
             if(original_call){
 
-                thread thr(fnc_imagine);
+                // for some reason this started refusing to compile
 
-                threads.push_back(move(thr));
-                // move the object here instead of copying because threads are not copy-able
+                    // thread thr(fnc_imagine);
+
+                    // threads.push_back(move(thr));
+                    // // move the object here instead of copying because threads are not copy-able
+
+                threads.push_back(thread(fnc_imagine));
 
             }else{
 
@@ -1502,18 +1508,18 @@ enum winner Board::next_turn(bool original_call, int brute_force_depth, int mate
         {
             int best_move_material = INT_MIN;
 
-            for(auto [material, from, to] : move_evaluations){
+            for(auto [material, move] : move_evaluations){
 
                 if(material > best_move_material){
 
                     best_move_material = material;
 
                     best_moves = {};
-                    best_moves.push_back({from, to});
+                    best_moves.push_back(move);
                     
                 }else if(material == best_move_material){
 
-                    best_moves.push_back({from, to});
+                    best_moves.push_back(move);
 
                 }
 
@@ -1535,14 +1541,9 @@ enum winner Board::next_turn(bool original_call, int brute_force_depth, int mate
 
     assert(best_moves.size() > 0);
 
-    auto [from, to] = vec_get_random_element(best_moves);
+    board_move_t move = vec_get_random_element(best_moves);
 
-    enum winner winner = move_piece_to(from, to);
-    if(winner != WINNER_NO_WINNER_YET){
-        return winner;
-    }
-
-    return WINNER_NO_WINNER_YET;
+    return make_move(move);
 
 }
 
@@ -1601,15 +1602,29 @@ pair<bool, Tile *> Board::get_tile_at(board_pos_t pos){
 
 }
 
-enum winner Board::move_piece_to(board_pos_t from, board_pos_t to){
+enum winner Board::make_move(board_move_t move){
 
-    auto [tile_from_fail, tile_from] = get_tile_at(from);
-    assert(!tile_from_fail);
+    enum winner winner = WINNER_NO_WINNER_YET;
 
-    Piece * piece = tile_from->piece;
-    assert(piece);
+    for(board_move_simple_t simple_move : move){
 
-    return piece->move_to(this, to);
+        auto [tile_from_fail, tile_from] = get_tile_at(simple_move.first);
+        assert(!tile_from_fail);
+
+        Piece * piece = tile_from->piece;
+        assert(piece);
+
+        enum winner win_tmp = piece->move_to(this, simple_move.second);
+
+        if(winner == WINNER_NO_WINNER_YET){
+
+            winner = win_tmp;
+
+        }
+
+    }
+
+    return winner;
 
 }
 
@@ -1998,12 +2013,19 @@ int main(){
 
                 bool move_is_valid = false;
 
-                vector<board_move_simple_t> valid_moves = piece->get_valid_moves();
+                vector<board_move_t> valid_moves = piece->get_valid_moves();
 
-                for(board_move_simple_t valid_move : valid_moves){
-                    if(valid_move == desired_move){
-                        move_is_valid = true;
-                        break;
+                board_move_t desired_move_fixed;
+
+                for(board_move_t valid_move : valid_moves){
+                    for(board_move_simple_t simple_move : valid_move){
+                        // this means that if we are to do ambigious moves (like rokade)
+                        // we need to move a certain piece (in rokade's case the king)
+                        if(simple_move == desired_move){
+                            move_is_valid = true;
+                            desired_move_fixed = valid_move;
+                            break;
+                        }
                     }
                 }
 
@@ -2014,7 +2036,7 @@ int main(){
                     break;
                 }
 
-                winner = board->move_piece_to(from, to);
+                winner = board->make_move(desired_move_fixed);
                 board->player_turn = !board->player_turn;
 
                 break;
