@@ -3,11 +3,7 @@
 //
 // implementing stealmate by repeating turns
 //
-// rokade doesn't move the rook
-//
 // we could further reduce the board representations
-//
-// items on board are hard to click
 
 ///
 //////
@@ -1206,7 +1202,10 @@ vector<board_move_t> Piece::gen_valid_moves_king(){
                             if(location->neighbour_left->neighbour_left->neighbour_left->neighbour_left->piece->type == PT_ROOK){
                                 if(location->neighbour_left->neighbour_left->neighbour_left->neighbour_left->piece->owner == owner){
                                     if(location->neighbour_left->neighbour_left->neighbour_left->neighbour_left->piece->has_not_moved){
-                                        moves.push_back({{get_pos(), location->neighbour_left->neighbour_left->get_pos()}});
+                                        moves.push_back({
+                                            {get_pos(), location->neighbour_left->neighbour_left->get_pos()},
+                                            {location->neighbour_left->neighbour_left->neighbour_left->neighbour_left->get_pos(), location->neighbour_left->get_pos()},
+                                        });
                                     }
                                 }
                             }
@@ -1223,7 +1222,10 @@ vector<board_move_t> Piece::gen_valid_moves_king(){
                         if(location->neighbour_right->neighbour_right->neighbour_right->piece->type == PT_ROOK){
                             if(location->neighbour_right->neighbour_right->neighbour_right->piece->owner == owner){
                                 if(location->neighbour_right->neighbour_right->neighbour_right->piece->has_not_moved){
-                                    moves.push_back({{get_pos(), location->neighbour_right->neighbour_right->get_pos()}});
+                                    moves.push_back({
+                                        {get_pos(), location->neighbour_right->neighbour_right->get_pos()},
+                                        {location->neighbour_right->neighbour_right->neighbour_right->get_pos(), location->neighbour_right->get_pos()},
+                                    });
                                 }
                             }
                         }
@@ -1737,11 +1739,19 @@ board_pos_t Board::terminal_position_to_board_position(pair<int, int> term_pos){
     {
         term_pos.second -= 2;
 
-        if(term_pos.second % 4 != 0){
-            return {-1, -1};
-        }
+        int rem = term_pos.second % 4;
 
         term_pos.second /= 4;
+
+        if(rem == 0 || rem == 1){
+            // no need for correction
+        }else if(rem == 2){
+            return {-1, -1};
+        }else if(rem == 3){
+            term_pos.second += 1;
+        }else{
+            UNREACHABLE();
+        }
     }
 
     return term_pos;
