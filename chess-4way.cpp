@@ -901,77 +901,51 @@ vector<board_move_t> Piece::gen_valid_moves_pawn(){
 
 vector<board_move_t> Piece::gen_valid_moves_knight(){
 
-    vector<board_move_t> moves = {};
-
     // TODO in the 4way chess map this won't be sufficient
 
-    Tile * loc;
+    vector<Tile *> move_candidates = {};
 
-    if((loc = location->neighbour_up)){
+    {
 
-        if(loc->neighbour_upleft){
-            if(!loc->neighbour_upleft->piece || (loc->neighbour_upleft->piece->owner != owner)){
-                moves.push_back({{get_pos(), loc->neighbour_upleft->get_pos()}});
-            }
+        Tile * loc;
+
+        if((loc = location->neighbour_up)){
+            move_candidates.push_back(loc->neighbour_upleft);
+            move_candidates.push_back(loc->neighbour_upright);
         }
 
-        if(loc->neighbour_upright){
-            if(!loc->neighbour_upright->piece || (loc->neighbour_upright->piece->owner != owner)){
-                moves.push_back({{get_pos(), loc->neighbour_upright->get_pos()}});
-            }
+        if((loc = location->neighbour_down)){
+            move_candidates.push_back(loc->neighbour_downleft);
+            move_candidates.push_back(loc->neighbour_downright);
         }
 
-    }
-
-    if((loc = location->neighbour_down)){
-
-        if(loc->neighbour_downleft){
-            if(!loc->neighbour_downleft->piece || (loc->neighbour_downleft->piece->owner != owner)){
-                moves.push_back({{get_pos(), loc->neighbour_downleft->get_pos()}});
-            }
+        if((loc = location->neighbour_left)){
+            move_candidates.push_back(loc->neighbour_upleft);
+            move_candidates.push_back(loc->neighbour_downleft);
         }
 
-        if(loc->neighbour_downright){
-            if(!loc->neighbour_downright->piece || (loc->neighbour_downright->piece->owner != owner)){
-                moves.push_back({{get_pos(), loc->neighbour_downright->get_pos()}});
-            }
+        if((loc = location->neighbour_right)){
+            move_candidates.push_back(loc->neighbour_upright);
+            move_candidates.push_back(loc->neighbour_downright);
         }
 
     }
 
-    if((loc = location->neighbour_left)){
+    vector<board_move_t> valid_moves = {};
 
-        if(loc->neighbour_upleft){
-            if(!loc->neighbour_upleft->piece || (loc->neighbour_upleft->piece->owner != owner)){
-                moves.push_back({{get_pos(), loc->neighbour_upleft->get_pos()}});
-            }
+    for(Tile * tile : move_candidates){
+
+        if(!tile){
+            continue;
         }
 
-        if(loc->neighbour_downleft){
-            if(!loc->neighbour_downleft->piece || (loc->neighbour_downleft->piece->owner != owner)){
-                moves.push_back({{get_pos(), loc->neighbour_downleft->get_pos()}});
-            }
-        }
-
-    }
-
-    if((loc = location->neighbour_right)){
-
-        if(loc->neighbour_upright){
-            if(!loc->neighbour_upright->piece || (loc->neighbour_upright->piece->owner != owner)){
-                moves.push_back({{get_pos(), loc->neighbour_upright->get_pos()}});
-            }
-        }
-
-        if(loc->neighbour_downright){
-            if(!loc->neighbour_downright->piece || (loc->neighbour_downright->piece->owner != owner)){
-                moves.push_back({{get_pos(), loc->neighbour_downright->get_pos()}});
-            }
+        if(!tile->piece || tile->piece->owner != owner){
+            valid_moves.push_back({{get_pos(), tile->get_pos()}});
         }
 
     }
 
-    return moves;
+    return valid_moves;
 
 }
 
