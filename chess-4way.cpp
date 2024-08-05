@@ -43,6 +43,7 @@
 #include <mutex>
 #include <shared_mutex>
 #include <thread>
+#include <algorithm>
 
 ///
 //////
@@ -901,8 +902,6 @@ vector<board_move_t> Piece::gen_valid_moves_pawn(){
 
 vector<board_move_t> Piece::gen_valid_moves_knight(){
 
-    // TODO in the 4way chess map this won't be sufficient
-
     vector<Tile *> move_candidates = {};
 
     {
@@ -929,7 +928,30 @@ vector<board_move_t> Piece::gen_valid_moves_knight(){
             move_candidates.push_back(loc->neighbour_downright);
         }
 
+        if((loc = location->neighbour_upleft)){
+            move_candidates.push_back(loc->neighbour_up);
+            move_candidates.push_back(loc->neighbour_right);
+        }
+
+        if((loc = location->neighbour_upright)){
+            move_candidates.push_back(loc->neighbour_up);
+            move_candidates.push_back(loc->neighbour_right);
+        }
+
+        if((loc = location->neighbour_downleft)){
+            move_candidates.push_back(loc->neighbour_down);
+            move_candidates.push_back(loc->neighbour_left);
+        }
+
+        if((loc = location->neighbour_downright)){
+            move_candidates.push_back(loc->neighbour_down);
+            move_candidates.push_back(loc->neighbour_right);
+        }
+
     }
+
+    // remove duplicates
+    move_candidates.erase( unique( move_candidates.begin(), move_candidates.end() ), move_candidates.end() );
 
     vector<board_move_t> valid_moves = {};
 
