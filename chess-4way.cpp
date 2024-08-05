@@ -137,6 +137,8 @@ enum winner{
 
 typedef pair<int, int> board_pos_t;
 
+typedef pair<board_pos_t, board_pos_t> board_move_simple_t;
+
 ///
 //////
 /////////// declaration
@@ -153,7 +155,7 @@ class Board{
 
         int player_turn = 0; // which player's turn is it
 
-        unordered_map< string , vector< pair< board_pos_t , board_pos_t > > > * already_calculated_moves = nullptr;
+        unordered_map< string , vector< board_move_simple_t > > * already_calculated_moves = nullptr;
         shared_mutex * already_calculated_moves_lock = nullptr;
 
         // Board();
@@ -543,7 +545,7 @@ void file_write_boardpos(ofstream & f, board_pos_t & data){
     assert(!f.fail());
 }
 
-void file_write__vector__pair_boardpos_boardpos(ofstream & f, vector< pair< board_pos_t , board_pos_t > > & data){
+void file_write_vector_boardmovesimple(ofstream & f, vector< board_move_simple_t > & data){
     file_write_size(f, data.size());
 
     for(auto [pos0, pos1] : data){
@@ -555,13 +557,13 @@ void file_write__vector__pair_boardpos_boardpos(ofstream & f, vector< pair< boar
     }
 }
 
-void file_write___unsortedmap___string___vector__pair_boardpos_boardpos(ofstream & f, unordered_map< string , vector< pair< board_pos_t , board_pos_t > > > * data){
+void file_write_unsortedmap_string_vector_boardmovesimple(ofstream & f, unordered_map< string , vector< board_move_simple_t > > * data){
 
     file_write_size(f, data->size());
 
     for(auto it = data->begin(); it != data->end(); ++it){
         file_write_string(f, it->first);
-        file_write__vector__pair_boardpos_boardpos(f, it->second);
+        file_write_vector_boardmovesimple(f, it->second);
     }
 }
 
@@ -594,7 +596,7 @@ void file_read_boardpos(ifstream & f, board_pos_t & data){
     assert(f.gcount() == sizeof(int));
 }
 
-void file_read__vector__pair_boardpos_boardpos(ifstream & f, vector< pair< board_pos_t , board_pos_t > > & data){
+void file_read_vector_boardmovesimple(ifstream & f, vector< board_move_simple_t > & data){
     size_t size = 0;
     file_read_size(f, size);
 
@@ -609,7 +611,7 @@ void file_read__vector__pair_boardpos_boardpos(ifstream & f, vector< pair< board
     }
 }
 
-void file_read___unsortedmap___string___vector__pair_boardpos_boardpos(ifstream & f, unordered_map< string , vector< pair< board_pos_t , board_pos_t > > > * data){
+void file_read_unsortedmap_string_vector_boardmovesimple(ifstream & f, unordered_map< string , vector< board_move_simple_t > > * data){
     size_t size = 0;
     file_read_size(f, size);
 
@@ -617,8 +619,8 @@ void file_read___unsortedmap___string___vector__pair_boardpos_boardpos(ifstream 
         string key = {};
         file_read_string(f, key);
 
-        vector< pair< board_pos_t , board_pos_t > > value = {};
-        file_read__vector__pair_boardpos_boardpos(f, value);
+        vector<board_move_simple_t> value = {};
+        file_read_vector_boardmovesimple(f, value);
 
         (*data)[key] = value;
     }
@@ -1288,7 +1290,7 @@ Board::~Board(){
 
 void Board::init(){
 
-    already_calculated_moves = new unordered_map< string , vector< pair< board_pos_t , board_pos_t > > > ();
+    already_calculated_moves = new unordered_map< string , vector< board_move_simple_t > > ();
     already_calculated_moves_lock = new shared_mutex ();
 
     spawn_tiles();
@@ -1371,7 +1373,7 @@ enum winner Board::next_turn(bool original_call, int brute_force_depth, int mate
     int player = player_turn;
     player_turn = !player_turn;
 
-    vector< pair< board_pos_t , board_pos_t > > best_moves = {};
+    vector<board_move_simple_t> best_moves = {};
 
 #if REMEMBER_MOVES
 
@@ -1396,7 +1398,7 @@ enum winner Board::next_turn(bool original_call, int brute_force_depth, int mate
 #endif
     {
 
-        vector< pair< board_pos_t , board_pos_t > > all_valid_moves = {};
+        vector<board_move_simple_t> all_valid_moves = {};
 
         for(Tile * tile : tiles){
 
