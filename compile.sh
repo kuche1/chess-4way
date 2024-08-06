@@ -8,6 +8,10 @@ HERE=$(readlink -f $(dirname -- "$BASH_SOURCE"))
 
 APP_NAME='chess-4way'
 
+# compiler
+
+COMPILER='g++'
+
 # compiler flags
 
 FLAGS_STANDARD='-std=c++23'
@@ -23,8 +27,7 @@ FLAGS_RUNTIME_SAFETY=''
 FLAGS_OPTIMISATION='-Ofast -march=native'
 # example: -Ofast -march=native
 
-FLAGS_MISC='-g'
-# example: -static
+FLAGS_MISC='-g -static'
 # note: can't have both -static and -fsanitize=undefined
 
 FLAGS_LIB=''
@@ -40,7 +43,7 @@ DEFINE_COMMIT_ID=$(git -C "$HERE" rev-parse HEAD)
 
 output="$HERE/$APP_NAME"
 
-g++ $FLAGS -DCOMMIT_ID="\"$DEFINE_COMMIT_ID\"" -o "$output" "$HERE/$APP_NAME.cpp"
+$COMPILER $FLAGS -D COMMIT_ID="\"$DEFINE_COMMIT_ID\"" -o "$output" "$HERE/$APP_NAME.cpp"
 
 echo "Compiled binary:"
 echo "$output"
